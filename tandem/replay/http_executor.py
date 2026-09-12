@@ -125,8 +125,9 @@ def execute_http_commit(
     maybe_crash("E_AFTER_GUARD", capability.id)
     maybe_crash("F_BEFORE_SUBMIT", capability.id)
 
+    headers = {"Authorization": f"Bearer {settings.tandem_admin_token}"}
     try:
-        response = httpx.post(url, data=payload, timeout=5.0)
+        response = httpx.post(url, data=payload, headers=headers, timeout=5.0)
     except Exception as exc:
         # The request may or may not have reached the target; nothing below can
         # decide that, so the engine reconciles against the target itself.

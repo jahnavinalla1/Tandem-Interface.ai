@@ -10,6 +10,7 @@ from fastapi import Depends, FastAPI, Form, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from simulators.core_bank.beta_state import core_bank_beta_state
+from tandem.config import settings
 from tandem.security.auth import require_admin_token
 
 app = FastAPI(title="Institution Beta - Heritage Core Simulator")
@@ -105,6 +106,7 @@ async def entry(member_id: str = Query(...)):
           <input type="hidden" name="member_id" value="{html.escape(item.member_id)}">
           <input type="hidden" name="account_id" value="{html.escape(item.account_id)}">
           <input type="hidden" name="currency" value="USD">
+          <input type="hidden" name="admin_token" value="{html.escape(settings.tandem_admin_token)}">
           <label>Dispute ref <input name="case_id" id="beta_dispute_ref"></label>
           <label>Credit value <input name="amount" id="beta_credit_value"></label>
           <button class="legacy-review-action" type="submit">Review Adjustment</button>
@@ -112,7 +114,11 @@ async def entry(member_id: str = Query(...)):
     )
 
 
-@app.post("/workspace/credit/confirm", response_class=HTMLResponse)
+@app.post(
+    "/workspace/credit/confirm",
+    response_class=HTMLResponse,
+    dependencies=[Depends(require_admin_token)],
+)
 async def confirm(
     institution_id: str = Form(...),
     member_id: str = Form(...),
@@ -135,12 +141,17 @@ async def confirm(
           <input type="hidden" name="case_id" value="{html.escape(case_id)}">
           <input type="hidden" name="amount" value="{amount:.2f}">
           <input type="hidden" name="currency" value="{html.escape(currency)}">
+          <input type="hidden" name="admin_token" value="{html.escape(settings.tandem_admin_token)}">
           <button id="{_id('beta-commit')}" class="btn-commit-legacy" type="submit">Apply Heritage Adjustment</button>
         </form></div></body></html>"""
     )
 
 
-@app.post("/workspace/credit/commit", response_class=HTMLResponse)
+@app.post(
+    "/workspace/credit/commit",
+    response_class=HTMLResponse,
+    dependencies=[Depends(require_admin_token)],
+)
 async def commit(
     institution_id: str = Form(...),
     member_id: str = Form(...),

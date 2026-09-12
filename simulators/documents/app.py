@@ -15,6 +15,7 @@ from fastapi import Depends, FastAPI, Form, HTTPException, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from simulators.documents.state import document_state
+from tandem.config import settings
 from tandem.security.auth import require_admin_token
 
 app = FastAPI(title="Document & Member Notice Delivery Simulator")
@@ -99,14 +100,19 @@ async def index():
                 <label for="deadline">Compliance Notice Deadline:</label>
                 <input type="text" id="deadline" name="deadline_due_at" value="2026-09-04 17:00:00" required />
             </div>
+            <input type="hidden" name="admin_token" value="__ADMIN_TOKEN__" />
             <button type="submit" id="btn_send_notice" class="btn">Dispatch Member Disclosure Notice</button>
         </form>
     </div>
 </body>
-</html>""")
+</html>""".replace("__ADMIN_TOKEN__", html.escape(settings.tandem_admin_token)))
 
 
-@app.post("/notices/send", response_class=HTMLResponse)
+@app.post(
+    "/notices/send",
+    response_class=HTMLResponse,
+    dependencies=[Depends(require_admin_token)],
+)
 async def send_notice(
     case_id: str = Form(...),
     member_id: str = Form(...),

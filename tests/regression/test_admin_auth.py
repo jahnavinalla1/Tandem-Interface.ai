@@ -111,6 +111,123 @@ def test_browser_session_action_route_requires_admin_token() -> None:
     assert authenticated_but_missing.status_code == 404
 
 
+def test_core_bank_credit_workflow_rejects_missing_and_wrong_admin_token() -> None:
+    """The provisional-credit workflow can move money -- every POST step must be gated."""
+    client = TestClient(core_bank_app)
+
+    compliance = client.post(
+        "/workspace/credit/clear_compliance", data={"member_id": "8830142"}
+    )
+    assert compliance.status_code == 401
+
+    confirm_payload = {
+        "member_id": "8830142",
+        "account_id": "CHK-8830142-01",
+        "case_id": "D-AUTH-CREDIT-001",
+        "amount": "50.00",
+        "reason": "test",
+    }
+    confirm_forged = client.post("/workspace/credit/confirm", data=confirm_payload)
+    assert confirm_forged.status_code == 401
+
+    confirm_wrong = client.post(
+        "/workspace/credit/confirm", data={**confirm_payload, "admin_token": "wrong-token"}
+    )
+    assert confirm_wrong.status_code == 401
+
+    confirm_valid = client.post(
+        "/workspace/credit/confirm",
+        data={**confirm_payload, "admin_token": settings.tandem_admin_token},
+    )
+    assert confirm_valid.status_code == 200
+
+    commit_payload = {
+        "institution_id": "alpha",
+        "member_id": "8830142",
+        "account_id": "CHK-8830142-01",
+        "case_id": "D-AUTH-CREDIT-001",
+        "amount": "50.00",
+        "currency": "USD",
+    }
+    commit_forged = client.post("/workspace/credit/commit", data=commit_payload)
+    assert commit_forged.status_code == 401
+
+    commit_wrong = client.post(
+        "/workspace/credit/commit", data={**commit_payload, "admin_token": "wrong-token"}
+    )
+    assert commit_wrong.status_code == 401
+
+    commit_valid = client.post(
+        "/workspace/credit/commit",
+        data={**commit_payload, "admin_token": settings.tandem_admin_token},
+    )
+    assert commit_valid.status_code == 200
+    assert "MONEY_MOVED=TRUE" in commit_valid.text
+
+
+def test_core_bank_beta_credit_workflow_rejects_missing_and_wrong_admin_token() -> None:
+    client = TestClient(core_bank_beta_app)
+
+    confirm_payload = {
+        "institution_id": "beta",
+        "member_id": "8830142",
+        "account_id": "CHK-8830142-01",
+        "case_id": "D-AUTH-CREDIT-BETA-001",
+        "amount": "25.00",
+        "currency": "USD",
+    }
+    confirm_forged = client.post("/workspace/credit/confirm", data=confirm_payload)
+    assert confirm_forged.status_code == 401
+
+    commit_forged = client.post("/workspace/credit/commit", data=confirm_payload)
+    assert commit_forged.status_code == 401
+
+    commit_valid = client.post(
+        "/workspace/credit/commit",
+        data={**confirm_payload, "admin_token": settings.tandem_admin_token},
+    )
+    assert commit_valid.status_code == 200
+    assert "MONEY_MOVED=TRUE" in commit_valid.text
+
+
+def test_processor_chargeback_file_rejects_missing_and_wrong_admin_token() -> None:
+    client = TestClient(processor_app)
+    payload = {"case_id": "D-AUTH-CB-001", "card_last4": "4112", "amount": "50.00"}
+
+    forged = client.post("/chargeback/file", data=payload)
+    assert forged.status_code == 401
+
+    wrong = client.post("/chargeback/file", data={**payload, "admin_token": "wrong-token"})
+    assert wrong.status_code == 401
+
+    valid = client.post(
+        "/chargeback/file", data={**payload, "admin_token": settings.tandem_admin_token}
+    )
+    assert valid.status_code == 200
+
+
+def test_documents_notice_send_rejects_missing_and_wrong_admin_token() -> None:
+    client = TestClient(documents_app)
+    payload = {
+        "case_id": "D-AUTH-NOTICE-001",
+        "member_id": "8830142",
+        "notice_type": "REG_E_PROVISIONAL_CREDIT_DISCLOSURE",
+        "amount": "50.00",
+        "deadline_due_at": "2026-09-04 17:00:00",
+    }
+
+    forged = client.post("/notices/send", data=payload)
+    assert forged.status_code == 401
+
+    wrong = client.post("/notices/send", data={**payload, "admin_token": "wrong-token"})
+    assert wrong.status_code == 401
+
+    valid = client.post(
+        "/notices/send", data={**payload, "admin_token": settings.tandem_admin_token}
+    )
+    assert valid.status_code == 200
+
+
 def test_launcher_binds_configured_host_not_hardcoded_0000() -> None:
     """Bind-default regression: previously always hardcoded `--host 0.0.0.0`."""
     loopback_commands = build_service_commands("127.0.0.1")

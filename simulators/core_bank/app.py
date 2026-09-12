@@ -21,6 +21,7 @@ from fastapi import Depends, FastAPI, Form, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from simulators.core_bank.state import core_bank_state
+from tandem.config import settings
 from tandem.security.auth import require_admin_token
 
 app = FastAPI(title="Legacy Core Banking Platform (Symitar/Keystone Simulator)")
@@ -237,6 +238,7 @@ async def workspace_credit_entry(member_id: str = Query(...)):
         </div>
         <form method="POST" action="/workspace/credit/clear_compliance">
             <input type="hidden" name="member_id" value="{html.escape(member.member_id)}" />
+            <input type="hidden" name="admin_token" value="{html.escape(settings.tandem_admin_token)}" />
             <button type="submit" id="{interstitial_btn_id}" class="operator-signoff-btn" style="background:#cc0000; color:#fff; font-weight:bold; padding:8px 16px; border:none; cursor:pointer;">
                 [OPERATOR SIGN-OFF] Acknowledge Compliance & Resume
             </button>
@@ -278,6 +280,7 @@ async def workspace_credit_entry(member_id: str = Query(...)):
         <form id="{form_id}" method="POST" action="/workspace/credit/confirm">
             <input type="hidden" name="member_id" value="{html.escape(member.member_id)}" />
             <input type="hidden" name="account_id" value="{html.escape(member.account_id)}" />
+            <input type="hidden" name="admin_token" value="{html.escape(settings.tandem_admin_token)}" />
 
             <div class="form-row">
                 <label for="{case_input_id}">Case / Dispute Ref:</label>
@@ -303,7 +306,11 @@ async def workspace_credit_entry(member_id: str = Query(...)):
 </html>""")
 
 
-@app.post("/workspace/credit/clear_compliance", response_class=HTMLResponse)
+@app.post(
+    "/workspace/credit/clear_compliance",
+    response_class=HTMLResponse,
+    dependencies=[Depends(require_admin_token)],
+)
 async def clear_compliance(member_id: str = Form(...)):
     core_bank_state.compliance_cleared = True
     return HTMLResponse(f"""
@@ -312,7 +319,11 @@ async def clear_compliance(member_id: str = Form(...)):
     """)
 
 
-@app.post("/workspace/credit/confirm", response_class=HTMLResponse)
+@app.post(
+    "/workspace/credit/confirm",
+    response_class=HTMLResponse,
+    dependencies=[Depends(require_admin_token)],
+)
 async def workspace_credit_confirm(
     member_id: str = Form(...),
     account_id: str = Form(...),
@@ -362,6 +373,7 @@ async def workspace_credit_confirm(
             <input type="hidden" name="case_id" value="{html.escape(case_id)}" />
             <input type="hidden" name="amount" value="{amount}" />
             <input type="hidden" name="currency" value="USD" />
+            <input type="hidden" name="admin_token" value="{html.escape(settings.tandem_admin_token)}" />
             <button type="submit" id="{submit_btn_id}" class="btn-commit-final" style="background:#cc0000; color:#fff; font-weight:bold; font-size:12px; padding:8px 20px; border:2px outset #fff; cursor:pointer;">
                 POST PROVISIONAL CREDIT NOW
             </button>
@@ -372,7 +384,11 @@ async def workspace_credit_confirm(
 </html>""")
 
 
-@app.post("/workspace/credit/commit", response_class=HTMLResponse)
+@app.post(
+    "/workspace/credit/commit",
+    response_class=HTMLResponse,
+    dependencies=[Depends(require_admin_token)],
+)
 async def workspace_credit_commit(
     institution_id: str = Form(...),
     member_id: str = Form(...),

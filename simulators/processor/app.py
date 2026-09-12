@@ -15,6 +15,7 @@ from fastapi import Depends, FastAPI, Form, HTTPException, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from simulators.processor.state import processor_state
+from tandem.config import settings
 from tandem.security.auth import require_admin_token
 
 app = FastAPI(title="Card Processor Portal Simulator (Visa DPS / PSCU)")
@@ -111,6 +112,7 @@ async def index():
                 <label for="reason">Dispute Reason Code:</label>
                 <input type="text" id="reason" name="dispute_reason" value="10.4 - Fraud / Unauthorized Transaction" />
             </div>
+            <input type="hidden" name="admin_token" value="__ADMIN_TOKEN__" />
             <button type="submit" id="btn_file_chargeback" class="btn-submit">Transmit Chargeback Filing</button>
         </form>
         <div style="margin-top: 15px; border-top: 1px solid #edf2f7; padding-top: 10px;">
@@ -118,10 +120,14 @@ async def index():
         </div>
     </div>
 </body>
-</html>""")
+</html>""".replace("__ADMIN_TOKEN__", html.escape(settings.tandem_admin_token)))
 
 
-@app.post("/chargeback/file", response_class=HTMLResponse)
+@app.post(
+    "/chargeback/file",
+    response_class=HTMLResponse,
+    dependencies=[Depends(require_admin_token)],
+)
 async def file_chargeback(
     case_id: str = Form(...),
     card_last4: str = Form(...),

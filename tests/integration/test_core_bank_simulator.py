@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from simulators.core_bank.app import app
 from simulators.core_bank.state import core_bank_state
+from tandem.config import settings
 
 client = TestClient(app)
 
@@ -55,6 +56,7 @@ def test_precheck_before_and_after_credit():
             "case_id": "D-8842",
             "amount": 340.00,
             "currency": "USD",
+            "admin_token": settings.tandem_admin_token,
         },
     )
     assert post_resp.status_code == 200

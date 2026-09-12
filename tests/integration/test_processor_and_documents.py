@@ -7,6 +7,7 @@ from simulators.documents.app import app as docs_app
 from simulators.documents.state import document_state
 from simulators.processor.app import app as processor_app
 from simulators.processor.state import processor_state
+from tandem.config import settings
 
 proc_client = TestClient(processor_app)
 docs_client = TestClient(docs_app)
@@ -29,6 +30,7 @@ def test_processor_successful_chargeback():
             "card_last4": "4112",
             "amount": 340.00,
             "dispute_reason": "Fraud / Unauthorized Transaction",
+            "admin_token": settings.tandem_admin_token,
         },
     )
     assert response.status_code == 200
@@ -46,7 +48,12 @@ def test_processor_session_expired_switch():
     processor_state.session_expired = True
     response = proc_client.post(
         "/chargeback/file",
-        data={"case_id": "D-8842", "card_last4": "4112", "amount": 340.00},
+        data={
+            "case_id": "D-8842",
+            "card_last4": "4112",
+            "amount": 340.00,
+            "admin_token": settings.tandem_admin_token,
+        },
     )
     assert response.status_code == 401
     assert "PROCESSOR SESSION EXPIRED" in response.text
@@ -60,7 +67,12 @@ def test_processor_timeout_after_submit_leaves_effect_for_reconciliation():
     processor_state.timeout_after_submit = True
     response = proc_client.post(
         "/chargeback/file",
-        data={"case_id": "D-8842", "card_last4": "4112", "amount": 340.00},
+        data={
+            "case_id": "D-8842",
+            "card_last4": "4112",
+            "amount": 340.00,
+            "admin_token": settings.tandem_admin_token,
+        },
     )
     assert response.status_code == 504
 
@@ -86,6 +98,7 @@ def test_document_notice_success_and_failure():
             "notice_type": "REG_E_PROVISIONAL_CREDIT_DISCLOSURE",
             "amount": 340.00,
             "deadline_due_at": "2026-09-04 17:00:00",
+            "admin_token": settings.tandem_admin_token,
         },
     )
     assert send_resp.status_code == 200
@@ -107,6 +120,7 @@ def test_document_notice_success_and_failure():
             "notice_type": "REG_E_PROVISIONAL_CREDIT_DISCLOSURE",
             "amount": 100.00,
             "deadline_due_at": "2026-09-04 17:00:00",
+            "admin_token": settings.tandem_admin_token,
         },
     )
     assert fail_resp.status_code == 500
