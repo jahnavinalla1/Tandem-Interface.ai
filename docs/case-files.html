@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tandem Case Files</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============ TOKENS — light (default) ============ */
+  :root{
+    --bg:#f5f9f2;
+    --bg-elevated:#ffffff;
+    --ink:#141a20;
+    --ink-dim:#4b5a55;
+    --border:#cfdacd;
+    --brass:#8a6a35;
+    --brass-strong:#6e5227;
+    --brass-tint:#f2e9d6;
+
+    --bad-bg:#fbeceb;
+    --bad-fg:#8a2c26;
+    --bad-border:#e3b3ac;
+
+    --good-bg:#eaf3ea;
+    --good-fg:#2c6b45;
+    --good-border:#bcdcc0;
+
+    --human-bg:#eeecf7;
+    --human-fg:#453d8a;
+    --human-border:#c9c3ea;
+
+    --warn-bg:#f7ecd8;
+    --warn-fg:#8a5a12;
+    --warn-border:#e6cd9a;
+
+    --shadow:0 1px 2px rgba(20,26,32,.06), 0 10px 28px -14px rgba(20,26,32,.22);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#11161a;
+      --bg-elevated:#1a2126;
+      --ink:#eef2ec;
+      --ink-dim:#a9b6ac;
+      --border:#2c3630;
+      --brass:#cba268;
+      --brass-strong:#e0b878;
+      --brass-tint:#332a1a;
+
+      --bad-bg:#3a1f1c;
+      --bad-fg:#f2a49c;
+      --bad-border:#5c2e29;
+
+      --good-bg:#1c3226;
+      --good-fg:#8fd6a4;
+      --good-border:#2c5039;
+
+      --human-bg:#252148;
+      --human-fg:#c3bdf2;
+      --human-border:#3b3670;
+
+      --warn-bg:#3a2c12;
+      --warn-fg:#e0b35a;
+      --warn-border:#5c481f;
+
+      --shadow:0 1px 2px rgba(0,0,0,.5), 0 14px 32px -14px rgba(0,0,0,.65);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#11161a;
+    --bg-elevated:#1a2126;
+    --ink:#eef2ec;
+    --ink-dim:#a9b6ac;
+    --border:#2c3630;
+    --brass:#cba268;
+    --brass-strong:#e0b878;
+    --brass-tint:#332a1a;
+
+    --bad-bg:#3a1f1c;
+    --bad-fg:#f2a49c;
+    --bad-border:#5c2e29;
+
+    --good-bg:#1c3226;
+    --good-fg:#8fd6a4;
+    --good-border:#2c5039;
+
+    --human-bg:#252148;
+    --human-fg:#c3bdf2;
+    --human-border:#3b3670;
+
+    --warn-bg:#3a2c12;
+    --warn-fg:#e0b35a;
+    --warn-border:#5c481f;
+
+    --shadow:0 1px 2px rgba(0,0,0,.5), 0 14px 32px -14px rgba(0,0,0,.65);
+    color-scheme: dark;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  ::selection{ background:var(--brass-tint); color:var(--ink); }
+
+  .deck{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* ============ chrome ============ */
+  .chrome{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:1.1rem 1.6rem;
+    flex:0 0 auto;
+  }
+  .brand{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.72rem;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+  }
+  .brand b{ color:var(--brass-strong); font-weight:600; }
+  .counter{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.72rem;
+    letter-spacing:.05em;
+    color:var(--ink-dim);
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* ============ viewport / slides ============ */
+  .viewport{
+    flex:1 1 auto;
+    position:relative;
+    overflow:hidden;
+    cursor:pointer;
+  }
+  .slide{
+    position:absolute;
+    inset:0;
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    padding:2.5rem clamp(1.5rem,7vw,7rem);
+    overflow-y:auto;
+  }
+  .slide.active{
+    display:flex;
+    animation:rise .5s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes rise{
+    from{ opacity:0; transform:translateY(14px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .slide.active{ animation:none; }
+  }
+
+  /* ============ title slide ============ */
+  .slide-title{ text-align:left; max-width:920px; }
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.8rem;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--brass-strong);
+    margin:0 0 1.1rem;
+  }
+  .hero-title{
+    font-family:"Fraunces",Georgia,serif;
+    font-weight:600;
+    font-size:clamp(2.3rem,5.6vw,4.1rem);
+    line-height:1.05;
+    letter-spacing:-.01em;
+    margin:0 0 1.4rem;
+    text-wrap:balance;
+  }
+  .hero-sub{
+    font-size:1.2rem;
+    line-height:1.55;
+    color:var(--ink-dim);
+    max-width:58ch;
+    margin:0 0 2.2rem;
+  }
+  .hero-hint{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.78rem;
+    letter-spacing:.06em;
+    color:var(--ink-dim);
+    display:inline-flex;
+    align-items:center;
+    gap:.5rem;
+    border:1px solid var(--border);
+    padding:.55rem .9rem;
+    border-radius:3px;
+    width:fit-content;
+  }
+  .hero-hint .arrow{ animation:nudge 1.6s ease-in-out infinite; }
+  @keyframes nudge{
+    0%,100%{ transform:translateX(0); }
+    50%{ transform:translateX(4px); }
+  }
+  @media (prefers-reduced-motion:reduce){ .hero-hint .arrow{ animation:none; } }
+
+  /* ============ scenario slide ============ */
+  .slide-scenario{ gap:clamp(1.4rem,3vh,2.2rem); max-width:1180px; margin:0 auto; width:100%; }
+  .sc-head{ display:flex; align-items:flex-end; gap:1.4rem; flex-wrap:wrap; }
+  .sc-num{
+    font-family:"Fraunces",Georgia,serif;
+    font-weight:400;
+    font-size:clamp(2.6rem,6vw,4.4rem);
+    color:var(--brass);
+    line-height:1;
+  }
+  .sc-title{
+    font-family:"Fraunces",Georgia,serif;
+    font-weight:600;
+    font-size:clamp(1.6rem,3.4vw,2.5rem);
+    line-height:1.1;
+    margin:0 0 .3rem;
+    text-wrap:balance;
+  }
+  .sc-problem{
+    font-size:clamp(1.02rem,1.6vw,1.3rem);
+    line-height:1.55;
+    color:var(--ink-dim);
+    max-width:70ch;
+  }
+  .sc-problem b{ color:var(--ink); font-weight:600; }
+
+  .outcomes{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1rem;
+  }
+  @media (max-width:860px){
+    .outcomes{ grid-template-columns:1fr; }
+  }
+  .card{
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:1.15rem 1.25rem 1.3rem;
+    box-shadow:var(--shadow);
+    display:flex;
+    flex-direction:column;
+    gap:.55rem;
+    min-height:0;
+  }
+  .card-label{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.68rem;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    font-weight:600;
+  }
+  .card-body{
+    font-size:.98rem;
+    line-height:1.5;
+    color:var(--ink);
+  }
+  .card.without{ border-color:var(--bad-border); }
+  .card.without .card-label{ color:var(--bad-fg); }
+  .card.without::before{ content:"WITHOUT TANDEM"; }
+
+  .card.withus{ border-color:var(--good-border); }
+  .card.withus .card-label{ color:var(--good-fg); }
+
+  .code-chip{
+    display:inline-flex;
+    align-self:flex-start;
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.7rem;
+    letter-spacing:.03em;
+    padding:.25rem .55rem;
+    border-radius:3px;
+    font-weight:500;
+    margin-top:.15rem;
+  }
+  .code-good{ background:var(--good-bg); color:var(--good-fg); }
+  .code-warn{ background:var(--warn-bg); color:var(--warn-fg); }
+  .code-human{ background:var(--human-bg); color:var(--human-fg); }
+  .code-block{ background:var(--brass-tint); color:var(--brass-strong); }
+
+  .card.human{ border-style:dashed; opacity:.72; }
+  .card.human.active{
+    border-style:solid;
+    border-color:var(--human-border);
+    background:var(--human-bg);
+    opacity:1;
+  }
+  .card.human .card-label{ color:var(--human-fg); }
+  .card.human.active .card-label{ color:var(--human-fg); }
+  .status-word{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.68rem;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+  }
+  .card.human.active .status-word{ color:var(--human-fg); font-weight:600; }
+
+  /* ============ closing slide ============ */
+  .slide-close{ max-width:1000px; margin:0 auto; width:100%; }
+  .stats{ display:flex; gap:2.4rem; flex-wrap:wrap; margin:1.4rem 0 2rem; }
+  .stat{ display:flex; flex-direction:column; gap:.2rem; }
+  .stat-num{
+    font-family:"Fraunces",Georgia,serif;
+    font-weight:600;
+    font-size:clamp(3rem,8vw,5.4rem);
+    line-height:1;
+    font-variant-numeric:tabular-nums;
+  }
+  .stat.human .stat-num{ color:var(--human-fg); }
+  .stat.auto .stat-num{ color:var(--good-fg); }
+  .stat-label{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.75rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    max-width:22ch;
+  }
+  .close-line{
+    font-family:"Fraunces",Georgia,serif;
+    font-size:clamp(1.3rem,2.6vw,1.9rem);
+    line-height:1.4;
+    max-width:36ch;
+    text-wrap:balance;
+    margin:0 0 2rem;
+  }
+  .close-foot{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.75rem;
+    letter-spacing:.06em;
+    color:var(--ink-dim);
+  }
+
+  /* ============ nav ============ */
+  .controls{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:1.4rem;
+    padding:1rem 1.6rem 1.3rem;
+  }
+  .navbtn{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:1rem;
+    width:2.3rem;
+    height:2.3rem;
+    border-radius:50%;
+    border:1px solid var(--border);
+    background:var(--bg-elevated);
+    color:var(--ink);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:border-color .15s ease, transform .1s ease;
+  }
+  .navbtn:hover{ border-color:var(--brass); }
+  .navbtn:active{ transform:scale(.94); }
+  .navbtn:focus-visible, .dot:focus-visible, .hero-hint:focus-visible{
+    outline:2px solid var(--brass); outline-offset:2px;
+  }
+  .navbtn[disabled]{ opacity:.35; cursor:default; }
+  .dots{ display:flex; gap:.4rem; }
+  .dot{
+    width:.5rem; height:.5rem; border-radius:50%;
+    background:var(--border);
+    border:none; padding:0; cursor:pointer;
+  }
+  .dot.on{ background:var(--brass); width:1.15rem; border-radius:3px; }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+  <div class="chrome">
+    <span class="brand"><b>TANDEM</b> · CASE FILES</span>
+    <span class="counter" id="counter">1 / 12</span>
+  </div>
+
+  <div class="viewport" id="viewport">
+
+    <section class="slide slide-title active" data-i="0">
+      <p class="eyebrow">Effect-Aware Automation · Reg E Dispute Workflow</p>
+      <h1 class="hero-title">Ten ways automation breaks&nbsp;&mdash;<br>and how we stop it.</h1>
+      <p class="hero-sub">Real scenarios from Tandem, an effect-aware computer-use layer for legacy banking systems &mdash; built, independently audited, and hardened case by case.</p>
+      <span class="hero-hint" tabindex="0">Press <span class="arrow">→</span> or click anywhere to begin</span>
+    </section>
+
+    <section class="slide slide-scenario" data-i="1">
+      <div class="sc-head">
+        <span class="sc-num">01</span>
+        <div><h2 class="sc-title">The Wrong Account</h2></div>
+      </div>
+      <p class="sc-problem">Two members share almost-identical IDs &mdash; <b>8830142</b> and <b>8830124</b>. A routine search can return both.</p>
+      <div class="outcomes">
+        <div class="card without"><span class="card-label"></span><p class="card-body">The robot clicks whichever row loads first. Money reaches a stranger's account before anyone notices.</p></div>
+        <div class="card withus"><span class="card-label">WITH TANDEM</span><p class="card-body">A container-scoped guard re-reads the exact member ID inside the confirmation box &mdash; not the search list &mdash; one step before the click.</p><span class="code-chip code-block">ENTITY_BINDING_MISMATCH</span></div>
+        <div class="card human active"><span class="card-label">HUMAN'S ROLE</span><span class="status-word">Active</span><p class="card-body">A reviewer confirms the correct identity before the case is retried.</p></div>
+      </div>
+    </section>
+
+    <section class="slide slide-scenario" data-i="2">
+      <div class="sc-head">
+        <span class="sc-num">02</span>
+        <div><h2 class="sc-title">Did It Actually Go Through?</h2></div>
+      </div>
+      <p class="sc-problem">The submit screen freezes mid-request. Client and server disagree on what just happened.</p>
+      <div class="outcomes">
+        <div class="card without"><span class="card-label"></span><p class="card-body">Blind retry risks paying twice. Blind abandonment risks paying never &mdash; and nobody notices either way.</p></div>
+        <div class="card withus"><span class="card-label">WITH TANDEM</span><p class="card-body">An independent postcheck queries the target system directly. If even that can't confirm it, the case is frozen instead of guessed at.</p><span class="code-chip code-warn">UNCERTAIN_EFFECT</span></div>
+        <div class="card human active"><span class="card-label">HUMAN'S ROLE</span><span class="status-word">Active</span><p class="card-body">A person checks the bank's real records and tells the system what actually happened.</p></div>
+      </div>
+    </section>
+
+    <section class="slide slide-scenario" data-i="3">
+      <div class="sc-head">
+        <span class="sc-num">03</span>
+        <div><h2 class="sc-title">The Process Just Died</h2></div>
+      </div>
+      <p class="sc-problem">A hard crash lands right after money moves but before the legally-required notice is sent.</p>
+      <div class="outcomes">
+        <div class="card without"><span class="card-label"></span><p class="card-body">Restarting from zero either re-pays the credit or forgets the notice entirely &mdash; both are real violations.</p></div>
+        <div class="card withus"><span class="card-label">WITH TANDEM</span><p class="card-body">Every step is written to a durable, append-only ledger the instant it happens. A fresh process resumes from exactly where it stopped.</p><span class="code-chip code-good">COMPLETED</span></div>
+        <div class="card human"><span class="card-label">HUMAN'S ROLE</span><span class="status-word">Not needed</span><p class="card-body">None. The ledger is the source of truth; a person can audit it after the fact.</p></div>
+      </div>
+    </section>
+
+    <section class="slide slide-scenario" data-i="4">
+      <div class="sc-head">
+        <span class="sc-num">04</span>
+        <div><h2 class="sc-title">A Human Has To Look</h2></div>
+      </div>
+      <p class="sc-problem">A compliance hold (fraud / BSA review) legally requires a person's sign-off before continuing.</p>
+      <div class="outcomes">
+        <div class="card without"><span class="card-label"></span><p class="card-body">Automation and a person can end up acting on the same live session at once, with no coordination.</p></div>
+        <div class="card withus"><span class="card-label">WITH TANDEM</span><p class="card-body">A single-owner lease with a fencing token means only one actor &mdash; robot or human &mdash; can hold a case at a time.</p><span class="code-chip code-human">NEEDS_HUMAN</span></div>
+        <div class="card human active"><span class="card-label">HUMAN'S ROLE</span><span class="status-word">Active</span><p class="card-body">Entirely the human's step: review the case, sign off, hand control back.</p></div>
+      </div>
+    </section>
+
+    <section class="slide slide-scenario" data-i="5">
+      <div class="sc-head">
+        <span class="sc-num">05</span>
+        <div><h2 class="sc-title">Two Workers, One Case</h2></div>
+      </div>
+      <p class="sc-problem">Running automation across multiple machines can let two workers grab the same dispute at once.</p>
+      <div class="outcomes">
+        <div class="card without"><span class="card-label"></span><p class="card-body">Both post the credit. The customer is paid twice, and the bank eats the loss.</p></div>
+        <div class="card withus"><span class="card-label">WITH TANDEM</span><p class="card-body">An atomic database claim lets exactly one worker own a case at a time &mdash; a real lock, not a convention.</p><span class="code-chip code-block">LEASE_FENCED</span></div>
+        <div class="card human"><span class="card-label">HUMAN'S ROLE</span><span class="status-word">Not needed</span><p class="card-body">None in the normal case. A stale claim is reassigned automatically and logged for later audit.</p></div>
+      </div>
+    </section>
+
+    <section class="slide slide-scenario" data-i="6">
+      <div class="sc-head">
+        <span class="sc-num">06</span>
+        <div><h2 class="sc-title">Someone Edited The Instructions</h2></div>
+      </div>
+      <p class="sc-problem">The robot's exact steps live in a saved file. What if someone quietly changes the destination account?</p>
+      <div class="outcomes">
+        <div class="card without"><span class="card-label"></span><p class="card-body">The tampered file runs identically to the real one. Nothing on screen looks any different.</p></div>
+        <div class="card withus"><span class="card-label">WITH TANDEM</span><p class="card-body">Every instruction file carries a cryptographic fingerprint. One changed character breaks it &mdash; the file is refused outright.</p><span class="code-chip code-block">ARTIFACT_HASH_MISMATCH</span></div>
+        <div class="card human active"><span class="card-label">HUMAN'S ROLE</span><span class="status-word">Active</span><p class="card-body">Engineering is alerted to investigate why the fingerprint changed &mdash; it never silently continues.</p></div>
+      </div>
+    </section>
+
+    <section class="slide slide-scenario" data-i="7">
+      <div class="sc-head">
+        <span class="sc-num">07</span>
+        <div><h2 class="sc-title">The Bait-and-Switch Field</h2></div>
+      </div>
+      <p class="sc-problem">A page can display "$340" while a hidden field underneath actually holds a different number entirely.</p>
+      <div class="outcomes">
+        <div class="card without"><span class="card-label"></span><p class="card-body">Money moves for whatever the hidden field says &mdash; not what anyone approved on screen.</p></div>
+        <div class="card withus"><span class="card-label">WITH TANDEM</span><p class="card-body">The guard reads the literal value about to be submitted, not the rendered text, immediately before the click.</p><span class="code-chip code-block">AMOUNT_MISMATCH</span></div>
+        <div class="card human"><span class="card-label">HUMAN'S ROLE</span><span class="status-word">Not needed</span><p class="card-body">None. The mismatch is blocked automatically and logged for review.</p></div>
+      </div>
+    </section>
+
+    <section class="slide slide-scenario" data-i="8">
+      <div class="sc-head">
+        <span class="sc-num">08</span>
+        <div><h2 class="sc-title">Garbage In, Money Out</h2></div>
+      </div>
+      <p class="sc-problem">Ordinary floating-point math can let invalid values &mdash; even "not-a-number" &mdash; slip past a dollar-limit check.</p>
+      <div class="outcomes">
+        <div class="card without"><span class="card-label"></span><p class="card-body">An invalid amount bypasses the $500 safety cap entirely.</p></div>
+        <div class="card withus"><span class="card-label">WITH TANDEM</span><p class="card-body">All money math runs on exact decimal arithmetic that rejects anything that isn't a clean, finite dollar amount.</p><span class="code-chip code-block">POLICY_VIOLATION</span></div>
+        <div class="card human"><span class="card-label">HUMAN'S ROLE</span><span class="status-word">Not needed</span><p class="card-body">None. Malformed amounts never reach a real system.</p></div>
+      </div>
+    </section>
+
+    <section class="slide slide-scenario" data-i="9">
+      <div class="sc-head">
+        <span class="sc-num">09</span>
+        <div><h2 class="sc-title">Missing The Legal Clock</h2></div>
+      </div>
+      <p class="sc-problem">Regulation E sets hard day-counts &mdash; 2, 10, 45 days. Skipping only weekends ignores bank holidays and timezones.</p>
+      <div class="outcomes">
+        <div class="card without"><span class="card-label"></span><p class="card-body">A notice goes out a day late. That's a compliance violation, not a bug report.</p></div>
+        <div class="card withus"><span class="card-label">WITH TANDEM</span><p class="card-body">A real federal holiday calendar, per-institution timezone, and standard vs. extended case rules compute the true due date.</p><span class="code-chip code-warn">OVERDUE monitor</span></div>
+        <div class="card human active"><span class="card-label">HUMAN'S ROLE</span><span class="status-word">Active</span><p class="card-body">Compliance staff watch the deadline dashboard and act before a case goes overdue.</p></div>
+      </div>
+    </section>
+
+    <section class="slide slide-scenario" data-i="10">
+      <div class="sc-head">
+        <span class="sc-num">10</span>
+        <div><h2 class="sc-title">Anyone Could Reach In</h2></div>
+      </div>
+      <p class="sc-problem">Early on, admin controls &mdash; reset data, flip a switch, seize a case &mdash; had no lock on them at all.</p>
+      <div class="outcomes">
+        <div class="card without"><span class="card-label"></span><p class="card-body">Anyone reachable over the network could wipe live financial data with one request.</p></div>
+        <div class="card withus"><span class="card-label">WITH TANDEM</span><p class="card-body">Every sensitive control now requires a secret admin token. No token, flat refusal &mdash; every time.</p><span class="code-chip code-block">401 UNAUTHORIZED</span></div>
+        <div class="card human"><span class="card-label">HUMAN'S ROLE</span><span class="status-word">Not needed</span><p class="card-body">Day-to-day operators never touch the token; only administrators hold it, by design.</p></div>
+      </div>
+    </section>
+
+    <section class="slide slide-close" data-i="11">
+      <p class="eyebrow">The Pattern</p>
+      <h2 class="hero-title" style="font-size:clamp(1.9rem,4vw,3rem);">Automate what's certain.<br>Escalate the instant it isn't.</h2>
+      <div class="stats">
+        <div class="stat human"><span class="stat-num">5 / 10</span><span class="stat-label">scenarios where a human must act</span></div>
+        <div class="stat auto"><span class="stat-num">5 / 10</span><span class="stat-label">handled automatically, every time</span></div>
+      </div>
+      <p class="close-line">Never guess with real money. If it can be verified, verify it and move on. The moment it can't, stop and hand it to a person.</p>
+      <p class="close-foot">TANDEM &middot; Effect-aware automation for legacy financial systems</p>
+    </section>
+
+  </div>
+
+  <div class="controls">
+    <button class="navbtn" id="prevBtn" aria-label="Previous slide">←</button>
+    <div class="dots" id="dots"></div>
+    <button class="navbtn" id="nextBtn" aria-label="Next slide">→</button>
+  </div>
+</div>
+
+<script>
+  (function(){
+    var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+    var total = slides.length;
+    var i = 0;
+    var counter = document.getElementById('counter');
+    var dotsWrap = document.getElementById('dots');
+    var prevBtn = document.getElementById('prevBtn');
+    var nextBtn = document.getElementById('nextBtn');
+    var viewport = document.getElementById('viewport');
+
+    for (var d = 0; d < total; d++){
+      var dot = document.createElement('button');
+      dot.className = 'dot' + (d === 0 ? ' on' : '');
+      dot.setAttribute('aria-label', 'Go to slide ' + (d+1));
+      (function(idx){ dot.addEventListener('click', function(e){ e.stopPropagation(); go(idx); }); })(d);
+      dotsWrap.appendChild(dot);
+    }
+    var dots = Array.prototype.slice.call(dotsWrap.children);
+
+    function render(){
+      slides.forEach(function(s, idx){ s.classList.toggle('active', idx === i); });
+      dots.forEach(function(dt, idx){ dt.classList.toggle('on', idx === i); });
+      counter.textContent = (i+1) + ' / ' + total;
+      prevBtn.disabled = i === 0;
+      nextBtn.disabled = i === total - 1;
+      try {
+        localStorage.setItem('tandem-case-files-slide', String(i));
+      } catch(e){}
+    }
+    function go(n){
+      i = Math.max(0, Math.min(total - 1, n));
+      render();
+    }
+    function next(){ if (i < total - 1) go(i+1); }
+    function prev(){ if (i > 0) go(i-1); }
+
+    prevBtn.addEventListener('click', function(e){ e.stopPropagation(); prev(); });
+    nextBtn.addEventListener('click', function(e){ e.stopPropagation(); next(); });
+    viewport.addEventListener('click', function(){ next(); });
+
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown'){ e.preventDefault(); next(); }
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp'){ e.preventDefault(); prev(); }
+      else if (e.key === 'Home'){ go(0); }
+      else if (e.key === 'End'){ go(total-1); }
+    });
+
+    try {
+      var saved = localStorage.getItem('tandem-case-files-slide');
+      if (saved !== null){ go(parseInt(saved, 10) || 0); } else { render(); }
+    } catch(e){ render(); }
+  })();
+</script>
+
+</body>
+</html>
