@@ -1,0 +1,64 @@
+[project]
+name = "tandem"
+version = "0.1.0"
+description = "Effect-aware computer-use automation layer for legacy financial systems"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.28.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "sqlalchemy>=2.0.28",
+    "playwright>=1.42.0",
+    "jinja2>=3.1.3",
+    "python-multipart>=0.0.9",
+    "httpx>=0.27.0",
+    "pyyaml>=6.0.1",
+    "tzdata>=2024.1",
+]
+
+[project.optional-dependencies]
+discovery = [
+    "browser-use>=0.1.20",
+    "langchain-openai>=0.1.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.3.0",
+    "mypy>=1.9.0",
+    "types-PyYAML>=6.0.12",
+]
+
+[project.scripts]
+tandem = "tandem.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tandem", "simulators"]
+
+[tool.hatch.build.targets.wheel.force-include]
+# Compiled/core capability YAML artifacts must ship inside the installed wheel --
+# `tandem.replay.executor` loads them by relative path, so a `pip install`ed wheel
+# without this would be missing the artifacts it needs to run (REQUIREMENTS_MATRIX #28).
+"capabilities" = "capabilities"
+
+[tool.hatch.build.targets.sdist]
+include = ["tandem", "simulators", "capabilities", "README.md"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = "test_*.py"

@@ -1,0 +1,158 @@
+# Compiled by Tandem CapabilityCompiler
+# Canonical SHA-256: 2b831b5ba7239aa4c5e6b29d81c56bec783e74d2f012da787f92883201209116
+
+id: core.post_provisional_credit
+version: 1.0.0
+schema_version: 1
+created_at: '2026-09-12T00:00:00+00:00'
+name: Post Provisional Credit
+description: Navigate hostile core banking portal, verify member, and commit provisional
+  credit.
+system: core_bank
+supported_surfaces:
+- core_bank
+effect:
+  class: COMMIT
+  idempotency_key: regE:{{input.case_id}}:provisional_credit
+  identity:
+    institution_id: '{{input.institution_id}}'
+    procedure_id: reg_e_dispute
+    case_id: '{{input.case_id}}'
+    capability_id: core.post_provisional_credit
+    member_id: '{{input.member_id}}'
+    account_id: '{{input.account_id}}'
+    amount: '{{input.amount}}'
+    currency: '{{input.currency}}'
+    business_reference: '{{input.case_id}}'
+  precheck:
+    capability: core.find_memo_by_case
+    params:
+      case_id: '{{input.case_id}}'
+    if_found: ALREADY_APPLIED
+  postcheck:
+    capability: core.find_memo_by_case
+    params:
+      case_id: '{{input.case_id}}'
+    expected_status: CONFIRMED
+  reconciliation:
+    strategy: POSTCHECK_OR_UNCERTAIN
+    max_inquiry_attempts: 2
+  compensation: core.reverse_provisional_credit
+  bounds:
+    max_amount: 500.0
+    currency: USD
+input_schema:
+  type: object
+  properties:
+    member_id:
+      type: string
+    account_id:
+      type: string
+    case_id:
+      type: string
+    amount:
+      type: number
+    currency:
+      type: string
+      const: USD
+    institution_id:
+      type: string
+  required:
+  - institution_id
+  - member_id
+  - account_id
+  - case_id
+  - amount
+  - currency
+output_schema:
+  type: object
+  properties:
+    receipt_reference:
+      type: string
+    money_moved:
+      type: boolean
+  required:
+  - receipt_reference
+  - money_moved
+scoped_guard:
+  guard_id: primary_commit_guard
+  container_selector: '#credit_action_container, .confirm-panel'
+  expected_institution_template: '{{input.institution_id}}'
+  expected_member_template: '{{input.member_id}}'
+  expected_account_template: '{{input.account_id}}'
+  expected_amount_template: '{{input.amount}}'
+  expected_currency_template: '{{input.currency}}'
+  expected_case_template: '{{input.case_id}}'
+steps:
+- step_id: step_1_nav
+  action: NAVIGATE
+  semantic_target: surface://core_bank/home
+  locator_candidates: []
+  input_value_template: null
+  expected_text: null
+  frame_selector: null
+- step_id: step_2_fill_member_id
+  action: FILL
+  semantic_target: Member Search Input
+  locator_candidates:
+  - input[name='q']
+  - '#search_input'
+  input_value_template: '{{input.member_id}}'
+  expected_text: null
+  frame_selector: '#core_workspace_frame'
+- step_id: step_3_click
+  action: CLICK
+  semantic_target: Search Button
+  locator_candidates:
+  - button[type='submit']
+  - '#search_btn'
+  input_value_template: null
+  expected_text: null
+  frame_selector: '#core_workspace_frame'
+- step_id: step_4_click
+  action: CLICK
+  semantic_target: Post Provisional Credit Link
+  locator_candidates:
+  - a.action-credit-btn
+  - text=Post Provisional Credit
+  input_value_template: null
+  expected_text: null
+  frame_selector: '#core_workspace_frame'
+- step_id: step_5_fill_case_id
+  action: FILL
+  semantic_target: Case ID Field
+  locator_candidates:
+  - input[name='case_id']
+  input_value_template: '{{input.case_id}}'
+  expected_text: null
+  frame_selector: '#core_workspace_frame'
+- step_id: step_6_fill_amount
+  action: FILL
+  semantic_target: Amount Field
+  locator_candidates:
+  - input[name='amount']
+  input_value_template: '{{input.amount}}'
+  expected_text: null
+  frame_selector: '#core_workspace_frame'
+- step_id: step_7_click
+  action: CLICK
+  semantic_target: Proceed to Confirmation
+  locator_candidates:
+  - button.btn-proceed
+  - text=Review & Continue >>
+  input_value_template: null
+  expected_text: null
+  frame_selector: '#core_workspace_frame'
+- step_id: step_8_click
+  action: SUBMIT
+  semantic_target: Final external credit actuation
+  locator_candidates:
+  - button.btn-commit-final
+  - '#btn_commit_credit'
+  - text=POST PROVISIONAL CREDIT NOW
+  input_value_template: null
+  expected_text: null
+  frame_selector: '#core_workspace_frame'
+  guard_ref: primary_commit_guard
+source_discovery_run_id: null
+artifact_hash: 2b831b5ba7239aa4c5e6b29d81c56bec783e74d2f012da787f92883201209116

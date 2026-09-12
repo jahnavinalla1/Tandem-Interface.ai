@@ -1,0 +1,63 @@
+id: "docs.send_notice"
+version: "1.0.0"
+schema_version: 1
+created_at: "2026-09-12T00:00:00+00:00"
+name: "Send Regulation E Notice"
+description: "Dispatch the member notice through the deterministic document adapter"
+system: "documents"
+supported_surfaces: ["documents"]
+effect:
+  class: "COMMIT"
+  idempotency_key: "regE:{{input.case_id}}:notice"
+  identity:
+    institution_id: "{{input.institution_id}}"
+    procedure_id: "reg_e_dispute"
+    case_id: "{{input.case_id}}"
+    capability_id: "docs.send_notice"
+    member_id: "{{input.member_id}}"
+    account_id: "{{input.account_id}}"
+    amount: "{{input.amount}}"
+    currency: "{{input.currency}}"
+    business_reference: "{{input.case_id}}"
+  precheck:
+    capability: "documents.find_notice_by_case"
+    params: {case_id: "{{input.case_id}}"}
+    if_found: "ALREADY_APPLIED"
+  postcheck:
+    capability: "documents.find_notice_by_case"
+    params: {case_id: "{{input.case_id}}"}
+    expected_status: "SENT"
+  reconciliation:
+    strategy: "POSTCHECK_OR_UNCERTAIN"
+    max_inquiry_attempts: 2
+  bounds:
+    max_amount: 500.00
+    currency: "USD"
+input_schema:
+  type: "object"
+  properties:
+    institution_id: {type: "string"}
+    member_id: {type: "string"}
+    account_id: {type: "string"}
+    case_id: {type: "string"}
+    amount: {type: "number"}
+    currency: {type: "string", const: "USD"}
+    notice_type: {type: "string"}
+    deadline_due_at: {type: "string"}
+  required: [institution_id, member_id, account_id, case_id, amount, currency, notice_type, deadline_due_at]
+output_schema:
+  type: "object"
+  properties:
+    document_reference: {type: "string"}
+  required: [document_reference]
+scoped_guard:
+  guard_id: "documents_request_identity"
+  container_selector: "request-payload"
+steps:
+  - step_id: "submit_notice_request"
+    action: "HTTP_POST"
+    semantic_target: "documents-notice-route"
+    locator_candidates: []
+    guard_ref: "documents_request_identity"
+source_discovery_run_id: null
+artifact_hash: "a41cc7ab59d7f5dda1eaada52701e6112ff835252c80a4ff910600ec8cee2910"

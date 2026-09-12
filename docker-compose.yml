@@ -1,0 +1,32 @@
+services:
+  tandem-system:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tandem-system
+    ports:
+      - "8000:8000"  # Tandem Operator Console & REST API
+      - "8001:8001"  # Core Banking Simulator (Institution Alpha)
+      - "8002:8002"  # Core Banking Simulator (Institution Beta)
+      - "8003:8003"  # Card Processor Simulator
+      - "8004:8004"  # Document & Notice Simulator
+    environment:
+      - TANDEM_HOST=0.0.0.0  # container must bind all interfaces to be reachable via the published ports above
+      - TANDEM_PORT=8000
+      - CORE_BANK_PORT=8001
+      - CORE_BANK_2_PORT=8002
+      - PROCESSOR_PORT=8003
+      - DOCUMENTS_PORT=8004
+      - PLAYWRIGHT_HEADLESS=true
+      - TANDEM_DB_PATH=/app/data/tandem_ledger.db
+      - TANDEM_ADMIN_TOKEN=${TANDEM_ADMIN_TOKEN:-tandem-local-dev-admin-token-change-me}
+    volumes:
+      - ./evidence:/app/evidence
+      # Root cause (H-12): binding a single file (`./tandem_ledger.db:/app/tandem_ledger.db`)
+      # creates that path as a DIRECTORY when the host file doesn't exist yet, which then
+      # crashes SQLite on startup. A named volume backing a directory has no such failure mode.
+      - tandem_ledger_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  tandem_ledger_data:
