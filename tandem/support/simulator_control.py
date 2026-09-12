@@ -87,7 +87,11 @@ def reset_all_simulators() -> None:
 
 
 def set_core_bank_mode(
-    *, require_compliance_interstitial: "bool | None" = None, session_valid: "bool | None" = None
+    *,
+    require_compliance_interstitial: "bool | None" = None,
+    session_valid: "bool | None" = None,
+    fail_credit_lookup_when_present: "bool | None" = None,
+    post_commit_delay_ms: "int | None" = None,
 ) -> None:
     """Flip a core-bank (Alpha) failure/behavior switch via its authenticated HTTP API."""
     headers = {"Authorization": f"Bearer {settings.tandem_admin_token}"}
@@ -102,6 +106,20 @@ def set_core_bank_mode(
         httpx.post(
             f"{settings.core_bank_url}/api/set_session_valid",
             params={"valid": str(session_valid).lower()},
+            headers=headers,
+            timeout=3.0,
+        ).raise_for_status()
+    if fail_credit_lookup_when_present is not None:
+        httpx.post(
+            f"{settings.core_bank_url}/api/set_credit_lookup_failure",
+            params={"fail": str(fail_credit_lookup_when_present).lower()},
+            headers=headers,
+            timeout=3.0,
+        ).raise_for_status()
+    if post_commit_delay_ms is not None:
+        httpx.post(
+            f"{settings.core_bank_url}/api/set_post_commit_delay",
+            params={"delay_ms": post_commit_delay_ms},
             headers=headers,
             timeout=3.0,
         ).raise_for_status()

@@ -54,6 +54,18 @@ async def api_set_session(valid: bool = True):
     return {"status": "ok", "session_valid": valid}
 
 
+@app.post("/api/set_credit_lookup_failure", dependencies=[Depends(require_admin_token)])
+async def api_set_credit_lookup_failure(fail: bool = True):
+    core_bank_state.fail_credit_lookup_when_present = fail
+    return {"status": "ok", "fail_credit_lookup_when_present": fail}
+
+
+@app.post("/api/set_post_commit_delay", dependencies=[Depends(require_admin_token)])
+async def api_set_post_commit_delay(delay_ms: int = 0):
+    core_bank_state.simulate_post_commit_delay_ms = delay_ms
+    return {"status": "ok", "simulate_post_commit_delay_ms": delay_ms}
+
+
 @app.get("/api/member/{member_id}")
 async def api_get_member(member_id: str):
     member = core_bank_state.members.get(member_id)

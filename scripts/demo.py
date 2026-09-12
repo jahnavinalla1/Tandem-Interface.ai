@@ -13,7 +13,6 @@ Executes all 8 core demonstration scenarios specified in docs/product-spec.md:
 
 import argparse
 import time
-from unittest.mock import patch
 
 from playwright.sync_api import sync_playwright
 
@@ -97,7 +96,14 @@ def run_replay_new_case():
 
     cap = load_capability_from_yaml("capabilities/core/post_provisional_credit.yaml")
     case_id = f"D-REPLAY-{int(time.time())}"
-    inputs = {"member_id": "8830142", "case_id": case_id, "amount": 175.50}
+    inputs = {
+        "institution_id": "alpha",
+        "member_id": "8830142",
+        "account_id": "CHK-8830142-01",
+        "case_id": case_id,
+        "amount": 175.50,
+        "currency": "USD",
+    }
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -128,7 +134,14 @@ def run_replay_same_case():
 
     cap = load_capability_from_yaml("capabilities/core/post_provisional_credit.yaml")
     case_id = f"D-IDEMPOTENT-{int(time.time())}"
-    inputs = {"member_id": "8830142", "case_id": case_id, "amount": 210.00}
+    inputs = {
+        "institution_id": "alpha",
+        "member_id": "8830142",
+        "account_id": "CHK-8830142-01",
+        "case_id": case_id,
+        "amount": 210.00,
+        "currency": "USD",
+    }
 
     db = SessionLocal()
     with sync_playwright() as p:
@@ -343,8 +356,10 @@ def run_second_institution():
     inputs = {
         "institution_id": "beta",
         "member_id": "8830142",
+        "account_id": "CHK-8830142-01",
         "case_id": "D-BETA-7001",
         "amount": 340.00,
+        "currency": "USD",
     }
 
     # Pass 1: Unmapped
@@ -410,23 +425,42 @@ def run_uncertain_effect():
     # Part B: Unconfirmed Escalation
     print("\n[*] Part B: Ambiguous interruption where postcheck inquiry is inconclusive (UNCERTAIN_EFFECT)...")
     reset_all_simulators()
+    member_id = "8830142"
+    case_id = f"D-UNCERTAIN-{int(time.time())}"
+    inputs = {
+        "institution_id": "alpha",
+        "member_id": member_id,
+        "account_id": "CHK-8830142-01",
+        "case_id": case_id,
+        "amount": 215.00,
+        "currency": "USD",
+    }
+
+    # Server-side delay pushes the commit response past the client's timeout (a real
+    # dropped connection: the credit still lands), and disabling the memo lookup means
+    # reconciliation's postcheck genuinely cannot confirm it landed either -- that
+    # combination, not a bare exception, is what makes the effect truly UNCERTAIN.
+    set_core_bank_mode(post_commit_delay_ms=2000, fail_credit_lookup_when_present=True)
     cap = load_capability_from_yaml("capabilities/core/post_provisional_credit.yaml")
+    cap.steps = [cap.steps[-1]]  # Only the final SUBMIT step; page is already on the confirm screen.
 
     db2 = SessionLocal()
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        engine = EffectEngine(session=db2, page=page)
-        with patch.object(
-            engine.executor,
-            "execute",
-            side_effect=RuntimeError("Connection reset by peer during form POST"),
-        ):
-            outcome = engine.execute_capability(
-                capability=cap,
-                inputs={"member_id": "8830142", "case_id": f"D-UNCERTAIN-{int(time.time())}", "amount": 215.00},
-            )
-        browser.close()
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(f"http://127.0.0.1:8001/workspace/credit/entry?member_id={member_id}")
+            page.locator("input[name='case_id']").fill(case_id)
+            page.locator("input[name='amount']").fill(str(inputs["amount"]))
+            page.locator("button.btn-proceed").click()
+            page.set_default_timeout(500)
+            page.set_default_navigation_timeout(500)
+
+            engine = EffectEngine(session=db2, page=page)
+            outcome = engine.execute_capability(capability=cap, inputs=inputs)
+            browser.close()
+    finally:
+        set_core_bank_mode(post_commit_delay_ms=0, fail_credit_lookup_when_present=False)
 
     print(f"    Part B Result: Outcome '{outcome.code.value}' ({outcome.category.value})")
     print(f"    Safety Message: {outcome.message}")
