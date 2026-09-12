@@ -3,7 +3,7 @@
 > **Effect-aware computer-use automation layer for legacy financial systems.**
 > Bridges conversational dispute intake with disconnected core banking platforms, card processors, and notice engines under Regulation E (12 CFR 1005.11).
 
-[![CI](https://github.com/tandem-org/tandem/actions/workflows/ci.yml/badge.svg)](https://github.com/tandem-org/tandem/actions/workflows/ci.yml)
+[![CI](https://github.com/jahnavinalla1/Tandem-Interface.ai/actions/workflows/ci.yml/badge.svg)](https://github.com/jahnavinalla1/Tandem-Interface.ai/actions/workflows/ci.yml)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 [![Playwright](https://img.shields.io/badge/playwright-chromium-green.svg)](https://playwright.dev/)
 [![SQLite WAL](https://img.shields.io/badge/persistence-sqlite_wal-orange.svg)](https://www.sqlite.org/wal.html)
@@ -166,8 +166,8 @@ Tandem/
 ### Setup
 ```bash
 # Clone the repository
-git clone https://github.com/tandem-org/tandem.git
-cd Tandem
+git clone https://github.com/jahnavinalla1/Tandem-Interface.ai.git
+cd Tandem-Interface.ai
 
 # Create virtual environment and sync dependencies (frozen: reproducible from uv.lock,
 # --extra dev: pulls in pytest/ruff/mypy so the commands below work out of the box)
