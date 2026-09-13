@@ -1,0 +1,120 @@
+{
+  "actions": [
+    {
+      "action": "NAVIGATE",
+      "concrete_value": "http://127.0.0.1:8001",
+      "container_selector": null,
+      "frame_selector": null,
+      "guard_ref": null,
+      "input_name": null,
+      "is_mutating": false,
+      "locator_candidates": [],
+      "observed_text": null,
+      "selector": "http://127.0.0.1:8001",
+      "semantic_target": "surface://core_bank/home",
+      "step_id": "step_1_nav",
+      "timestamp": "2026-09-13T04:03:05.247891+00:00"
+    }
+  ],
+  "capability_id": "core.post_provisional_credit",
+  "completed_at": null,
+  "discovered_memo": null,
+  "events": [
+    {
+      "browser_observation": {
+        "body_text": "",
+        "frame_summaries": [],
+        "interactive_elements": [],
+        "title": "",
+        "url": "about:blank"
+      },
+      "cycle": 1,
+      "evidence_reference": "screenshots/cycle_001.png",
+      "executed_action": {
+        "action": "NAVIGATE",
+        "concrete_value": "http://127.0.0.1:8001",
+        "container_selector": null,
+        "frame_selector": null,
+        "guard_ref": null,
+        "input_name": null,
+        "is_mutating": false,
+        "locator_candidates": [],
+        "observed_text": null,
+        "selector": "http://127.0.0.1:8001",
+        "semantic_target": "surface://core_bank/home",
+        "step_id": "step_1_nav",
+        "timestamp": "2026-09-13T04:03:05.247891+00:00"
+      },
+      "model_decision": {
+        "action": "NAVIGATE",
+        "container_selector": null,
+        "frame_selector": null,
+        "guard_ref": null,
+        "input_name": null,
+        "is_mutating": false,
+        "locator_candidates": [],
+        "rationale": "Navigate to the application home page to begin finding the member and posting the provisional credit.",
+        "selector": null,
+        "semantic_target": "app_home",
+        "target_url": "http://127.0.0.1:8001"
+      },
+      "observation_reference": "observations/cycle_001.json",
+      "result": {
+        "status": "executed",
+        "url": "http://127.0.0.1:8001/"
+      },
+      "timestamp": "2026-09-13T04:03:05.293195+00:00"
+    },
+    {
+      "browser_observation": {
+        "body_text": "frame_selector=None:\nCORE CONSOLE // SYM-KEYSTONE v11.4.82 // BRANCH: 001-CENTRAL // OPERATOR: AUTO_SVC\nSYSTEM MODULES\n1. Member Search\n2. Memo & Ref Lookup\n3. Direct Credit Entry\nframe_selector=iframe[id=\"core_workspace_frame\"]:\nMEMBER INQUIRY & SERVICING\nEnter Member ID or Account Number:  Search Core",
+        "frame_summaries": [
+          "frame_selector=iframe[id=\"core_workspace_frame\"] url=http://127.0.0.1:8001/workspace/search elements=2"
+        ],
+        "interactive_elements": [
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': None, 'text': '1. Member Search', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/memos', 'container': None, 'text': '2. Memo & Ref Lookup', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/credit/entry?member_id=8830142', 'container': None, 'text': '3. Direct Credit Entry', 'value': None, 'frame_selector': None}",
+          "{'tag': 'input', 'id': 'search_input_137853', 'name': 'q', 'type': 'text', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/search'}, 'text': '', 'value': '', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'button', 'id': 'search_btn_306724', 'name': None, 'type': 'submit', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/search'}, 'text': 'Search Core', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}"
+        ],
+        "title": "Core Banking Platform - Symitar / Keystone Legacy Host",
+        "url": "http://127.0.0.1:8001/"
+      },
+      "cycle": 2,
+      "evidence_reference": "screenshots/cycle_002.png",
+      "executed_action": null,
+      "model_decision": {
+        "action": "FILL",
+        "container_selector": null,
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": null,
+        "input_name": "q",
+        "is_mutating": false,
+        "locator_candidates": [
+          "input[name=\"q\"]"
+        ],
+        "rationale": "Enter the member ID into the search input field inside the workspace frame to locate the member.",
+        "selector": "input[name=\"q\"]",
+        "semantic_target": "member search input",
+        "target_url": null
+      },
+      "observation_reference": "observations/cycle_002.json",
+      "result": {
+        "error_type": "ValueError",
+        "status": "failed"
+      },
+      "timestamp": "2026-09-13T04:03:11.957966+00:00"
+    }
+  ],
+  "evidence_directory": "/Users/nallajahnavi/Tandem--main/evidence/20260913T040259Z/discovery/56d52cbb-50f8-44c7-ad46-1b89145ba915",
+  "goal": "Find the supplied member, post the supplied provisional credit once, and verify the receipt",
+  "metadata": {},
+  "model": "gemini-3.6-flash",
+  "money_moved": false,
+  "provider": "gemini",
+  "run_id": "56d52cbb-50f8-44c7-ad46-1b89145ba915",
+  "started_at": "2026-09-13T04:03:00.664053+00:00",
+  "system": "core_bank",
+  "version": "1.0.0"
+}

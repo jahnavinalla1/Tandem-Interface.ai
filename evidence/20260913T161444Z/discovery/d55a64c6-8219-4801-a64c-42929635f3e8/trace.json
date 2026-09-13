@@ -1,0 +1,696 @@
+{
+  "actions": [
+    {
+      "action": "NAVIGATE",
+      "concrete_value": "http://127.0.0.1:8001",
+      "container_selector": null,
+      "frame_selector": null,
+      "guard_ref": null,
+      "input_name": null,
+      "is_mutating": false,
+      "locator_candidates": [],
+      "observed_text": null,
+      "selector": "http://127.0.0.1:8001",
+      "semantic_target": "surface://core_bank/home",
+      "step_id": "step_1_nav",
+      "timestamp": "2026-09-13T16:14:51.346360+00:00"
+    },
+    {
+      "action": "FILL",
+      "concrete_value": "8830142",
+      "container_selector": null,
+      "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+      "guard_ref": null,
+      "input_name": "member_id",
+      "is_mutating": false,
+      "locator_candidates": [
+        "input[name=\"q\"]",
+        "#search_input_516713"
+      ],
+      "observed_text": null,
+      "selector": "input[name=\"q\"]",
+      "semantic_target": "member search field",
+      "step_id": "step_2_fill_member_id",
+      "timestamp": "2026-09-13T16:14:57.354062+00:00"
+    },
+    {
+      "action": "CLICK",
+      "concrete_value": null,
+      "container_selector": "form",
+      "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+      "guard_ref": null,
+      "input_name": null,
+      "is_mutating": false,
+      "locator_candidates": [
+        "button[type=\"submit\"]",
+        "#search_btn_852449"
+      ],
+      "observed_text": "Enter Member ID or Account Number:  Search Core",
+      "selector": "button[type=\"submit\"]",
+      "semantic_target": "search button",
+      "step_id": "step_3_click",
+      "timestamp": "2026-09-13T16:15:49.236423+00:00"
+    },
+    {
+      "action": "CLICK",
+      "concrete_value": null,
+      "container_selector": null,
+      "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+      "guard_ref": null,
+      "input_name": null,
+      "is_mutating": false,
+      "locator_candidates": [
+        "a.action-credit-btn",
+        "a[href*=\"/workspace/credit/entry\"]",
+        "#btn_post_cred_410225"
+      ],
+      "observed_text": null,
+      "selector": "a.action-credit-btn",
+      "semantic_target": "Post Provisional Credit link",
+      "step_id": "step_4_click",
+      "timestamp": "2026-09-13T16:16:38.498219+00:00"
+    },
+    {
+      "action": "FILL",
+      "concrete_value": "D-DISC-0c4ff0e1d5a0",
+      "container_selector": null,
+      "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+      "guard_ref": null,
+      "input_name": "case_id",
+      "is_mutating": false,
+      "locator_candidates": [
+        "input[name=\"case_id\"]",
+        "#case_ref_816237"
+      ],
+      "observed_text": null,
+      "selector": "input[name=\"case_id\"]",
+      "semantic_target": "case ID input field",
+      "step_id": "step_5_fill_case_id",
+      "timestamp": "2026-09-13T16:16:46.789435+00:00"
+    },
+    {
+      "action": "FILL",
+      "concrete_value": "150.00",
+      "container_selector": null,
+      "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+      "guard_ref": null,
+      "input_name": "amount",
+      "is_mutating": false,
+      "locator_candidates": [
+        "input[name=\"amount\"]",
+        "#credit_amount_648603"
+      ],
+      "observed_text": null,
+      "selector": "input[name=\"amount\"]",
+      "semantic_target": "credit amount input field",
+      "step_id": "step_6_fill_amount",
+      "timestamp": "2026-09-13T16:16:54.656344+00:00"
+    },
+    {
+      "action": "CLICK",
+      "concrete_value": null,
+      "container_selector": "form#credit_form_664072",
+      "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+      "guard_ref": null,
+      "input_name": null,
+      "is_mutating": false,
+      "locator_candidates": [
+        "button.btn-proceed",
+        "#btn_proceed_confirm_681210",
+        "button[type=\"submit\"]"
+      ],
+      "observed_text": "Case / Dispute Ref: \nCredit Amount (USD): \nAdjustment Reason: \nReview & Continue >>",
+      "selector": "button.btn-proceed",
+      "semantic_target": "review and continue button",
+      "step_id": "step_7_click",
+      "timestamp": "2026-09-13T16:17:07.679022+00:00"
+    },
+    {
+      "action": "SUBMIT",
+      "concrete_value": null,
+      "container_selector": "form",
+      "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+      "guard_ref": "primary_commit_guard",
+      "input_name": null,
+      "is_mutating": true,
+      "locator_candidates": [
+        "button.btn-commit-final",
+        "button[type=\"submit\"]"
+      ],
+      "observed_text": "POST PROVISIONAL CREDIT NOW Cancel",
+      "selector": "button.btn-commit-final",
+      "semantic_target": "confirm and post provisional credit",
+      "step_id": "step_8_click",
+      "timestamp": "2026-09-13T16:17:14.344344+00:00"
+    }
+  ],
+  "capability_id": "core.post_provisional_credit",
+  "completed_at": "2026-09-13T16:17:20.645711+00:00",
+  "discovered_memo": "MC-7395",
+  "events": [
+    {
+      "browser_observation": {
+        "body_text": "",
+        "frame_summaries": [],
+        "interactive_elements": [],
+        "title": "",
+        "url": "about:blank"
+      },
+      "cycle": 1,
+      "evidence_reference": "screenshots/cycle_001.png",
+      "executed_action": {
+        "action": "NAVIGATE",
+        "concrete_value": "http://127.0.0.1:8001",
+        "container_selector": null,
+        "frame_selector": null,
+        "guard_ref": null,
+        "input_name": null,
+        "is_mutating": false,
+        "locator_candidates": [],
+        "observed_text": null,
+        "selector": "http://127.0.0.1:8001",
+        "semantic_target": "surface://core_bank/home",
+        "step_id": "step_1_nav",
+        "timestamp": "2026-09-13T16:14:51.346360+00:00"
+      },
+      "model_decision": {
+        "action": "NAVIGATE",
+        "container_selector": null,
+        "frame_selector": null,
+        "guard_ref": null,
+        "input_name": null,
+        "is_mutating": false,
+        "locator_candidates": [],
+        "rationale": "Navigate to http://127.0.0.1:8001 to begin finding the member and posting provisional credit.",
+        "selector": null,
+        "semantic_target": "banking portal allowed surface",
+        "target_url": "http://127.0.0.1:8001"
+      },
+      "observation_reference": "observations/cycle_001.json",
+      "result": {
+        "status": "executed",
+        "url": "http://127.0.0.1:8001/"
+      },
+      "timestamp": "2026-09-13T16:14:51.402193+00:00"
+    },
+    {
+      "browser_observation": {
+        "body_text": "frame_selector=None:\nCORE CONSOLE // SYM-KEYSTONE v11.4.82 // BRANCH: 001-CENTRAL // OPERATOR: AUTO_SVC\nSYSTEM MODULES\n1. Member Search\n2. Memo & Ref Lookup\n3. Direct Credit Entry\nframe_selector=iframe[id=\"core_workspace_frame\"]:\nMEMBER INQUIRY & SERVICING\nEnter Member ID or Account Number:  Search Core",
+        "frame_summaries": [
+          "frame_selector=iframe[id=\"core_workspace_frame\"] url=http://127.0.0.1:8001/workspace/search elements=2"
+        ],
+        "interactive_elements": [
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': None, 'text': '1. Member Search', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/memos', 'container': None, 'text': '2. Memo & Ref Lookup', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/credit/entry?member_id=8830142', 'container': None, 'text': '3. Direct Credit Entry', 'value': None, 'frame_selector': None}",
+          "{'tag': 'input', 'id': 'search_input_516713', 'name': 'q', 'type': 'text', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/search'}, 'text': '', 'value': '', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'button', 'id': 'search_btn_852449', 'name': None, 'type': 'submit', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/search'}, 'text': 'Search Core', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}"
+        ],
+        "title": "Core Banking Platform - Symitar / Keystone Legacy Host",
+        "url": "http://127.0.0.1:8001/"
+      },
+      "cycle": 2,
+      "evidence_reference": "screenshots/cycle_002.png",
+      "executed_action": {
+        "action": "FILL",
+        "concrete_value": "8830142",
+        "container_selector": null,
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": null,
+        "input_name": "member_id",
+        "is_mutating": false,
+        "locator_candidates": [
+          "input[name=\"q\"]",
+          "#search_input_516713"
+        ],
+        "observed_text": null,
+        "selector": "input[name=\"q\"]",
+        "semantic_target": "member search field",
+        "step_id": "step_2_fill_member_id",
+        "timestamp": "2026-09-13T16:14:57.354062+00:00"
+      },
+      "model_decision": {
+        "action": "FILL",
+        "container_selector": "form",
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": null,
+        "input_name": "member_id",
+        "is_mutating": false,
+        "locator_candidates": [
+          "input[name=\"q\"]",
+          "#search_input_516713"
+        ],
+        "rationale": "Enter the member ID into the search input field within the workspace frame to locate the member.",
+        "selector": "input[name=\"q\"]",
+        "semantic_target": "member search field",
+        "target_url": null
+      },
+      "observation_reference": "observations/cycle_002.json",
+      "result": {
+        "input_name": "member_id",
+        "status": "executed"
+      },
+      "timestamp": "2026-09-13T16:14:57.403807+00:00"
+    },
+    {
+      "browser_observation": {
+        "body_text": "frame_selector=None:\nCORE CONSOLE // SYM-KEYSTONE v11.4.82 // BRANCH: 001-CENTRAL // OPERATOR: AUTO_SVC\nSYSTEM MODULES\n1. Member Search\n2. Memo & Ref Lookup\n3. Direct Credit Entry\nframe_selector=iframe[id=\"core_workspace_frame\"]:\nMEMBER INQUIRY & SERVICING\nEnter Member ID or Account Number:  Search Core",
+        "frame_summaries": [
+          "frame_selector=iframe[id=\"core_workspace_frame\"] url=http://127.0.0.1:8001/workspace/search elements=2"
+        ],
+        "interactive_elements": [
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': None, 'text': '1. Member Search', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/memos', 'container': None, 'text': '2. Memo & Ref Lookup', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/credit/entry?member_id=8830142', 'container': None, 'text': '3. Direct Credit Entry', 'value': None, 'frame_selector': None}",
+          "{'tag': 'input', 'id': 'search_input_516713', 'name': 'q', 'type': 'text', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/search'}, 'text': '', 'value': '8830142', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'button', 'id': 'search_btn_852449', 'name': None, 'type': 'submit', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/search'}, 'text': 'Search Core', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}"
+        ],
+        "title": "Core Banking Platform - Symitar / Keystone Legacy Host",
+        "url": "http://127.0.0.1:8001/"
+      },
+      "cycle": 3,
+      "evidence_reference": "screenshots/cycle_003.png",
+      "executed_action": {
+        "action": "CLICK",
+        "concrete_value": null,
+        "container_selector": "form",
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": null,
+        "input_name": null,
+        "is_mutating": false,
+        "locator_candidates": [
+          "button[type=\"submit\"]",
+          "#search_btn_852449"
+        ],
+        "observed_text": "Enter Member ID or Account Number:  Search Core",
+        "selector": "button[type=\"submit\"]",
+        "semantic_target": "search button",
+        "step_id": "step_3_click",
+        "timestamp": "2026-09-13T16:15:49.236423+00:00"
+      },
+      "model_decision": {
+        "action": "CLICK",
+        "container_selector": "form",
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": null,
+        "input_name": null,
+        "is_mutating": false,
+        "locator_candidates": [
+          "button[type=\"submit\"]",
+          "#search_btn_852449"
+        ],
+        "rationale": "Click Search Core button to execute member search.",
+        "selector": "button[type=\"submit\"]",
+        "semantic_target": "search button",
+        "target_url": null
+      },
+      "observation_reference": "observations/cycle_003.json",
+      "result": {
+        "money_moved": false,
+        "receipt_reference": null,
+        "status": "executed"
+      },
+      "timestamp": "2026-09-13T16:15:49.316370+00:00"
+    },
+    {
+      "browser_observation": {
+        "body_text": "frame_selector=None:\nCORE CONSOLE // SYM-KEYSTONE v11.4.82 // BRANCH: 001-CENTRAL // OPERATOR: AUTO_SVC\nSYSTEM MODULES\n1. Member Search\n2. Memo & Ref Lookup\n3. Direct Credit Entry\nframe_selector=iframe[id=\"core_workspace_frame\"]:\nMEMBER INQUIRY & SERVICING\nEnter Member ID or Account Number:  Search Core\nMember ID\tAccount No\tFull Name\tBalance (USD)\tOperation\n8830142\tCHK-8830142-01\tJane DisputeMember\t$1,240.50\tPost Provisional Credit",
+        "frame_summaries": [
+          "frame_selector=iframe[id=\"core_workspace_frame\"] url=http://127.0.0.1:8001/workspace/search?q=8830142 elements=3"
+        ],
+        "interactive_elements": [
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': None, 'text': '1. Member Search', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/memos', 'container': None, 'text': '2. Memo & Ref Lookup', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/credit/entry?member_id=8830142', 'container': None, 'text': '3. Direct Credit Entry', 'value': None, 'frame_selector': None}",
+          "{'tag': 'input', 'id': 'search_input_769198', 'name': 'q', 'type': 'text', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/search'}, 'text': '', 'value': '8830142', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'button', 'id': 'search_btn_117090', 'name': None, 'type': 'submit', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/search'}, 'text': 'Search Core', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'a', 'id': 'btn_post_cred_410225', 'name': None, 'type': None, 'class': 'action-credit-btn', 'href': '/workspace/credit/entry?member_id=8830142', 'container': None, 'text': 'Post Provisional Credit', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}"
+        ],
+        "title": "Core Banking Platform - Symitar / Keystone Legacy Host",
+        "url": "http://127.0.0.1:8001/"
+      },
+      "cycle": 4,
+      "evidence_reference": "screenshots/cycle_004.png",
+      "executed_action": {
+        "action": "CLICK",
+        "concrete_value": null,
+        "container_selector": null,
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": null,
+        "input_name": null,
+        "is_mutating": false,
+        "locator_candidates": [
+          "a.action-credit-btn",
+          "a[href*=\"/workspace/credit/entry\"]",
+          "#btn_post_cred_410225"
+        ],
+        "observed_text": null,
+        "selector": "a.action-credit-btn",
+        "semantic_target": "Post Provisional Credit link",
+        "step_id": "step_4_click",
+        "timestamp": "2026-09-13T16:16:38.498219+00:00"
+      },
+      "model_decision": {
+        "action": "CLICK",
+        "container_selector": null,
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": null,
+        "input_name": null,
+        "is_mutating": false,
+        "locator_candidates": [
+          "a.action-credit-btn",
+          "a[href*=\"/workspace/credit/entry\"]",
+          "#btn_post_cred_410225"
+        ],
+        "rationale": "Click the Post Provisional Credit button for member 8830142 to navigate to the provisional credit entry form.",
+        "selector": "a.action-credit-btn",
+        "semantic_target": "Post Provisional Credit link",
+        "target_url": null
+      },
+      "observation_reference": "observations/cycle_004.json",
+      "result": {
+        "money_moved": false,
+        "receipt_reference": null,
+        "status": "executed"
+      },
+      "timestamp": "2026-09-13T16:16:38.556141+00:00"
+    },
+    {
+      "browser_observation": {
+        "body_text": "frame_selector=None:\nCORE CONSOLE // SYM-KEYSTONE v11.4.82 // BRANCH: 001-CENTRAL // OPERATOR: AUTO_SVC\nSYSTEM MODULES\n1. Member Search\n2. Memo & Ref Lookup\n3. Direct Credit Entry\nframe_selector=iframe[id=\"core_workspace_frame\"]:\nPOST PROVISIONAL CREDIT ENTRY\nTarget Member ID: 8830142\nAccount Number: CHK-8830142-01\nMember Name: Jane DisputeMember\nCurrent Ledger Balance: $1,240.50\nCase / Dispute Ref: \nCredit Amount (USD): \nAdjustment Reason: \nReview & Continue >>",
+        "frame_summaries": [
+          "frame_selector=iframe[id=\"core_workspace_frame\"] url=http://127.0.0.1:8001/workspace/credit/entry?member_id=8830142 elements=7"
+        ],
+        "interactive_elements": [
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': None, 'text': '1. Member Search', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/memos', 'container': None, 'text': '2. Memo & Ref Lookup', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/credit/entry?member_id=8830142', 'container': None, 'text': '3. Direct Credit Entry', 'value': None, 'frame_selector': None}",
+          "{'tag': 'input', 'id': None, 'name': 'member_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': None, 'name': 'account_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': None, 'name': 'admin_token', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': 'case_ref_816237', 'name': 'case_id', 'type': 'text', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': 'D-8842', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': 'credit_amount_648603', 'name': 'amount', 'type': 'number', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': '340.00', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': 'credit_memo_439917', 'name': 'reason', 'type': 'text', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': 'Reg E Provisional Credit - Card Dispute', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'button', 'id': 'btn_proceed_confirm_681210', 'name': None, 'type': 'submit', 'class': 'btn-proceed', 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': 'Review & Continue >>', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}"
+        ],
+        "title": "Core Banking Platform - Symitar / Keystone Legacy Host",
+        "url": "http://127.0.0.1:8001/"
+      },
+      "cycle": 5,
+      "evidence_reference": "screenshots/cycle_005.png",
+      "executed_action": {
+        "action": "FILL",
+        "concrete_value": "D-DISC-0c4ff0e1d5a0",
+        "container_selector": null,
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": null,
+        "input_name": "case_id",
+        "is_mutating": false,
+        "locator_candidates": [
+          "input[name=\"case_id\"]",
+          "#case_ref_816237"
+        ],
+        "observed_text": null,
+        "selector": "input[name=\"case_id\"]",
+        "semantic_target": "case ID input field",
+        "step_id": "step_5_fill_case_id",
+        "timestamp": "2026-09-13T16:16:46.789435+00:00"
+      },
+      "model_decision": {
+        "action": "FILL",
+        "container_selector": "form#credit_form_664072",
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": null,
+        "input_name": "case_id",
+        "is_mutating": false,
+        "locator_candidates": [
+          "input[name=\"case_id\"]",
+          "#case_ref_816237"
+        ],
+        "rationale": "Fill the case ID input field with the supplied case ID into the provisional credit entry form.",
+        "selector": "input[name=\"case_id\"]",
+        "semantic_target": "case ID input field",
+        "target_url": null
+      },
+      "observation_reference": "observations/cycle_005.json",
+      "result": {
+        "input_name": "case_id",
+        "status": "executed"
+      },
+      "timestamp": "2026-09-13T16:16:46.831246+00:00"
+    },
+    {
+      "browser_observation": {
+        "body_text": "frame_selector=None:\nCORE CONSOLE // SYM-KEYSTONE v11.4.82 // BRANCH: 001-CENTRAL // OPERATOR: AUTO_SVC\nSYSTEM MODULES\n1. Member Search\n2. Memo & Ref Lookup\n3. Direct Credit Entry\nframe_selector=iframe[id=\"core_workspace_frame\"]:\nPOST PROVISIONAL CREDIT ENTRY\nTarget Member ID: 8830142\nAccount Number: CHK-8830142-01\nMember Name: Jane DisputeMember\nCurrent Ledger Balance: $1,240.50\nCase / Dispute Ref: \nCredit Amount (USD): \nAdjustment Reason: \nReview & Continue >>",
+        "frame_summaries": [
+          "frame_selector=iframe[id=\"core_workspace_frame\"] url=http://127.0.0.1:8001/workspace/credit/entry?member_id=8830142 elements=7"
+        ],
+        "interactive_elements": [
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': None, 'text': '1. Member Search', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/memos', 'container': None, 'text': '2. Memo & Ref Lookup', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/credit/entry?member_id=8830142', 'container': None, 'text': '3. Direct Credit Entry', 'value': None, 'frame_selector': None}",
+          "{'tag': 'input', 'id': None, 'name': 'member_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': None, 'name': 'account_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': None, 'name': 'admin_token', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': 'case_ref_816237', 'name': 'case_id', 'type': 'text', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': 'D-DISC-0c4ff0e1d5a0', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': 'credit_amount_648603', 'name': 'amount', 'type': 'number', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': '340.00', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': 'credit_memo_439917', 'name': 'reason', 'type': 'text', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': 'Reg E Provisional Credit - Card Dispute', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'button', 'id': 'btn_proceed_confirm_681210', 'name': None, 'type': 'submit', 'class': 'btn-proceed', 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': 'Review & Continue >>', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}"
+        ],
+        "title": "Core Banking Platform - Symitar / Keystone Legacy Host",
+        "url": "http://127.0.0.1:8001/"
+      },
+      "cycle": 6,
+      "evidence_reference": "screenshots/cycle_006.png",
+      "executed_action": {
+        "action": "FILL",
+        "concrete_value": "150.00",
+        "container_selector": null,
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": null,
+        "input_name": "amount",
+        "is_mutating": false,
+        "locator_candidates": [
+          "input[name=\"amount\"]",
+          "#credit_amount_648603"
+        ],
+        "observed_text": null,
+        "selector": "input[name=\"amount\"]",
+        "semantic_target": "credit amount input field",
+        "step_id": "step_6_fill_amount",
+        "timestamp": "2026-09-13T16:16:54.656344+00:00"
+      },
+      "model_decision": {
+        "action": "FILL",
+        "container_selector": "form#credit_form_664072",
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": null,
+        "input_name": "amount",
+        "is_mutating": false,
+        "locator_candidates": [
+          "input[name=\"amount\"]",
+          "#credit_amount_648603"
+        ],
+        "rationale": "Fill the credit amount field with the supplied amount (150.00) in the provisional credit entry form.",
+        "selector": "input[name=\"amount\"]",
+        "semantic_target": "credit amount input field",
+        "target_url": null
+      },
+      "observation_reference": "observations/cycle_006.json",
+      "result": {
+        "input_name": "amount",
+        "status": "executed"
+      },
+      "timestamp": "2026-09-13T16:16:54.680798+00:00"
+    },
+    {
+      "browser_observation": {
+        "body_text": "frame_selector=None:\nCORE CONSOLE // SYM-KEYSTONE v11.4.82 // BRANCH: 001-CENTRAL // OPERATOR: AUTO_SVC\nSYSTEM MODULES\n1. Member Search\n2. Memo & Ref Lookup\n3. Direct Credit Entry\nframe_selector=iframe[id=\"core_workspace_frame\"]:\nPOST PROVISIONAL CREDIT ENTRY\nTarget Member ID: 8830142\nAccount Number: CHK-8830142-01\nMember Name: Jane DisputeMember\nCurrent Ledger Balance: $1,240.50\nCase / Dispute Ref: \nCredit Amount (USD): \nAdjustment Reason: \nReview & Continue >>",
+        "frame_summaries": [
+          "frame_selector=iframe[id=\"core_workspace_frame\"] url=http://127.0.0.1:8001/workspace/credit/entry?member_id=8830142 elements=7"
+        ],
+        "interactive_elements": [
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': None, 'text': '1. Member Search', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/memos', 'container': None, 'text': '2. Memo & Ref Lookup', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/credit/entry?member_id=8830142', 'container': None, 'text': '3. Direct Credit Entry', 'value': None, 'frame_selector': None}",
+          "{'tag': 'input', 'id': None, 'name': 'member_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': None, 'name': 'account_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': None, 'name': 'admin_token', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': 'case_ref_816237', 'name': 'case_id', 'type': 'text', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': 'D-DISC-0c4ff0e1d5a0', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': 'credit_amount_648603', 'name': 'amount', 'type': 'number', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': '150.00', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': 'credit_memo_439917', 'name': 'reason', 'type': 'text', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': 'Reg E Provisional Credit - Card Dispute', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'button', 'id': 'btn_proceed_confirm_681210', 'name': None, 'type': 'submit', 'class': 'btn-proceed', 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_664072', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': 'Review & Continue >>', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}"
+        ],
+        "title": "Core Banking Platform - Symitar / Keystone Legacy Host",
+        "url": "http://127.0.0.1:8001/"
+      },
+      "cycle": 7,
+      "evidence_reference": "screenshots/cycle_007.png",
+      "executed_action": {
+        "action": "CLICK",
+        "concrete_value": null,
+        "container_selector": "form#credit_form_664072",
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": null,
+        "input_name": null,
+        "is_mutating": false,
+        "locator_candidates": [
+          "button.btn-proceed",
+          "#btn_proceed_confirm_681210",
+          "button[type=\"submit\"]"
+        ],
+        "observed_text": "Case / Dispute Ref: \nCredit Amount (USD): \nAdjustment Reason: \nReview & Continue >>",
+        "selector": "button.btn-proceed",
+        "semantic_target": "review and continue button",
+        "step_id": "step_7_click",
+        "timestamp": "2026-09-13T16:17:07.679022+00:00"
+      },
+      "model_decision": {
+        "action": "CLICK",
+        "container_selector": "form#credit_form_664072",
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": null,
+        "input_name": null,
+        "is_mutating": false,
+        "locator_candidates": [
+          "button.btn-proceed",
+          "#btn_proceed_confirm_681210",
+          "button[type=\"submit\"]"
+        ],
+        "rationale": "Click 'Review & Continue' to proceed to the confirmation page for posting the provisional credit.",
+        "selector": "button.btn-proceed",
+        "semantic_target": "review and continue button",
+        "target_url": null
+      },
+      "observation_reference": "observations/cycle_007.json",
+      "result": {
+        "money_moved": false,
+        "receipt_reference": null,
+        "status": "executed"
+      },
+      "timestamp": "2026-09-13T16:17:07.733896+00:00"
+    },
+    {
+      "browser_observation": {
+        "body_text": "frame_selector=None:\nCORE CONSOLE // SYM-KEYSTONE v11.4.82 // BRANCH: 001-CENTRAL // OPERATOR: AUTO_SVC\nSYSTEM MODULES\n1. Member Search\n2. Memo & Ref Lookup\n3. Direct Credit Entry\nframe_selector=iframe[id=\"core_workspace_frame\"]:\n\u26a0\ufe0f ACTION REQUIRES CONFIRMATION: IRREVERSIBLE MONEY MOVEMENT\n\nYou are about to post a provisional credit to the following account:\n\nTarget Member ID: 8830142\nTarget Account: CHK-8830142-01\nDispute Case Ref: D-DISC-0c4ff0e1d5a0\nCredit Amount: $150.00 USD\nMemo Description: Reg E Provisional Credit - Card Dispute\nPOST PROVISIONAL CREDIT NOW Cancel",
+        "frame_summaries": [
+          "frame_selector=iframe[id=\"core_workspace_frame\"] url=http://127.0.0.1:8001/workspace/credit/confirm elements=9"
+        ],
+        "interactive_elements": [
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': None, 'text': '1. Member Search', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/memos', 'container': None, 'text': '2. Memo & Ref Lookup', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/credit/entry?member_id=8830142', 'container': None, 'text': '3. Direct Credit Entry', 'value': None, 'frame_selector': None}",
+          "{'tag': 'input', 'id': None, 'name': 'institution_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': None, 'name': 'member_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': None, 'name': 'account_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': None, 'name': 'case_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': None, 'name': 'amount', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': None, 'name': 'currency', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'input', 'id': None, 'name': 'admin_token', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'button', 'id': 'btn_commit_credit_172867', 'name': None, 'type': 'submit', 'class': 'btn-commit-final', 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': 'POST PROVISIONAL CREDIT NOW', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': 'Cancel', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}"
+        ],
+        "title": "Core Banking Platform - Symitar / Keystone Legacy Host",
+        "url": "http://127.0.0.1:8001/"
+      },
+      "cycle": 8,
+      "evidence_reference": "screenshots/cycle_008.png",
+      "executed_action": {
+        "action": "SUBMIT",
+        "concrete_value": null,
+        "container_selector": "form",
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": "primary_commit_guard",
+        "input_name": null,
+        "is_mutating": true,
+        "locator_candidates": [
+          "button.btn-commit-final",
+          "button[type=\"submit\"]"
+        ],
+        "observed_text": "POST PROVISIONAL CREDIT NOW Cancel",
+        "selector": "button.btn-commit-final",
+        "semantic_target": "confirm and post provisional credit",
+        "step_id": "step_8_click",
+        "timestamp": "2026-09-13T16:17:14.344344+00:00"
+      },
+      "model_decision": {
+        "action": "SUBMIT",
+        "container_selector": "form",
+        "frame_selector": "iframe[id=\"core_workspace_frame\"]",
+        "guard_ref": "primary_commit_guard",
+        "input_name": null,
+        "is_mutating": true,
+        "locator_candidates": [
+          "button.btn-commit-final",
+          "button[type=\"submit\"]"
+        ],
+        "rationale": "Submit the provisional credit confirmation form to post the $150.00 credit to the member account.",
+        "selector": "button.btn-commit-final",
+        "semantic_target": "confirm and post provisional credit",
+        "target_url": null
+      },
+      "observation_reference": "observations/cycle_008.json",
+      "result": {
+        "money_moved": false,
+        "receipt_reference": null,
+        "status": "executed"
+      },
+      "timestamp": "2026-09-13T16:17:14.401163+00:00"
+    },
+    {
+      "browser_observation": {
+        "body_text": "frame_selector=None:\nCORE CONSOLE // SYM-KEYSTONE v11.4.82 // BRANCH: 001-CENTRAL // OPERATOR: AUTO_SVC\nSYSTEM MODULES\n1. Member Search\n2. Memo & Ref Lookup\n3. Direct Credit Entry\nframe_selector=iframe[id=\"core_workspace_frame\"]:\n\u2713 PROVISIONAL CREDIT POSTED SUCCESSFULLY\nTransaction Memo:\tMC-7395\nDispute Case Ref:\tD-DISC-0c4ff0e1d5a0\nTarget Member ID:\t8830142\nTarget Account:\tCHK-8830142-01\nCredited Amount:\t$150.00 USD\nNew Ledger Balance:\t$1,390.50 USD\nTimestamp:\t2026-09-13 16:17:14 UTC\nMoney Movement Status:\tMONEY_MOVED=TRUE\nReturn to Member Search",
+        "frame_summaries": [
+          "frame_selector=iframe[id=\"core_workspace_frame\"] url=http://127.0.0.1:8001/workspace/credit/commit elements=1"
+        ],
+        "interactive_elements": [
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': None, 'text': '1. Member Search', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/memos', 'container': None, 'text': '2. Memo & Ref Lookup', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/credit/entry?member_id=8830142', 'container': None, 'text': '3. Direct Credit Entry', 'value': None, 'frame_selector': None}",
+          "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': None, 'text': 'Return to Member Search', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}"
+        ],
+        "title": "Core Banking Platform - Symitar / Keystone Legacy Host",
+        "url": "http://127.0.0.1:8001/"
+      },
+      "cycle": 9,
+      "evidence_reference": "screenshots/cycle_009.png",
+      "executed_action": null,
+      "model_decision": {
+        "action": "FINISH",
+        "container_selector": null,
+        "frame_selector": null,
+        "guard_ref": null,
+        "input_name": null,
+        "is_mutating": false,
+        "locator_candidates": [],
+        "rationale": "Verified successful provisional credit posting receipt showing Dispute Case Ref D-DISC-0c4ff0e1d5a0, Member ID 8830142, Credited Amount $150.00 USD, and MONEY_MOVED=TRUE.",
+        "selector": null,
+        "semantic_target": "provisional credit completion verified",
+        "target_url": null
+      },
+      "observation_reference": "observations/cycle_009.json",
+      "result": {
+        "money_moved": true,
+        "receipt_reference": "MC-7395",
+        "status": "finished"
+      },
+      "timestamp": "2026-09-13T16:17:20.640814+00:00"
+    }
+  ],
+  "evidence_directory": "/Users/nallajahnavi/Tandem--main/evidence/20260913T161444Z/discovery/d55a64c6-8219-4801-a64c-42929635f3e8",
+  "goal": "Find the supplied member, post the supplied provisional credit once, and verify the receipt",
+  "metadata": {
+    "amount": "150.00",
+    "currency": "USD",
+    "final_receipt_reference": "MC-7395",
+    "source_member_id": "8830142",
+    "target_account_id": "CHK-8830142-01"
+  },
+  "model": "gemini-3.6-flash",
+  "money_moved": true,
+  "provider": "gemini",
+  "run_id": "d55a64c6-8219-4801-a64c-42929635f3e8",
+  "started_at": "2026-09-13T16:14:45.666669+00:00",
+  "system": "core_bank",
+  "version": "1.0.0"
+}

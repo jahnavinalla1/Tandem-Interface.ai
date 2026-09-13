@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from playwright.sync_api import sync_playwright
 
+from tandem.discovery.gemini import GeminiProvider
 from tandem.discovery.provider import OpenAIResponsesProvider
 from tandem.domain.capability import StepAction, load_capability_from_yaml
 from tandem.domain.outcomes import OutcomeCategory, OutcomeCode
@@ -20,6 +21,7 @@ def simulators() -> None:
 
 @pytest.fixture(autouse=True)
 def no_provider_access(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
@@ -27,6 +29,7 @@ def no_provider_access(monkeypatch: pytest.MonkeyPatch) -> None:
         raise AssertionError("Replay attempted to invoke a discovery provider")
 
     monkeypatch.setattr(OpenAIResponsesProvider, "decide", forbidden)
+    monkeypatch.setattr(GeminiProvider, "decide", forbidden)
     reset_all_simulators()
     llm_tracker.reset()
 

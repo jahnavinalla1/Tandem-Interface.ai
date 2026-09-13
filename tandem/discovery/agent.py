@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -9,13 +10,13 @@ from urllib.parse import urlsplit
 from playwright.sync_api import Page
 
 from tandem.config import settings
+from tandem.discovery.factory import create_discovery_provider
 from tandem.discovery.provider import (
     BrowserObservation,
     DiscoveryAction,
     DiscoveryContext,
     DiscoveryDecision,
     DiscoveryProvider,
-    OpenAIResponsesProvider,
 )
 from tandem.discovery.recorder import ActionTrace, DiscoveryTrace, TraceRecorder, redact_secrets
 from tandem.domain.money import parse_money
@@ -32,10 +33,7 @@ class DiscoveryAgent:
         max_cycles: int = 20,
     ) -> None:
         self.page = page
-        self.provider = provider or OpenAIResponsesProvider(
-            api_key=settings.openai_api_key,
-            model=settings.discovery_model,
-        )
+        self.provider = provider or create_discovery_provider(settings)
         self.evidence_root = Path(evidence_root)
         self.max_cycles = max_cycles
 
@@ -46,13 +44,29 @@ class DiscoveryAgent:
     ) -> DiscoveryTrace:
         """Discover the provisional-credit flow through provider-selected actions."""
 
-        typed_inputs = self._typed_inputs(inputs)
-        url = portal_url or settings.core_bank_url
-        objective = (
-            "Navigate the core banking portal, locate the member, open the provisional-credit "
-            "flow, bind the case and amount, review the exact submitted values, commit once, "
-            "and finish only after observing the receipt."
+        return self.discover(
+            goal=(
+                "Navigate the core banking portal, locate the member, open the provisional-credit "
+                "flow, bind the case and amount, review the exact submitted values, commit once, "
+                "and finish only after observing the receipt."
+            ),
+            target=portal_url or settings.core_bank_url,
+            inputs=inputs,
         )
+
+    def discover(self, goal: str, target: str, inputs: dict[str, Any]) -> DiscoveryTrace:
+        """Accept a caller goal on the supported provisional-credit simulator surface.
+
+        The loop is goal-directed; input typing, receipt checks and compilation remain
+        specific to provisional credit. This is not a general-purpose task compiler.
+        """
+        if not goal.strip() or not target.strip():
+            raise ValueError("Discovery requires a non-empty goal and target")
+        if self._origin(target) != self._origin(settings.core_bank_url):
+            raise ValueError("Discovery target must be the configured core bank simulator")
+        typed_inputs = self._typed_inputs(inputs)
+        url = target
+        objective = goal
         recorder = TraceRecorder(
             capability_id="core.post_provisional_credit",
             goal=objective,
@@ -80,12 +94,20 @@ class DiscoveryAgent:
                 allowed_surfaces=[url],
             )
             decision = self.provider.decide(context)
-            action, result = self._execute_decision(
-                decision=decision,
-                inputs=typed_inputs,
-                portal_url=url,
-                recorder=recorder,
-            )
+            try:
+                action, result = self._execute_decision(
+                    decision=decision,
+                    inputs=typed_inputs,
+                    portal_url=url,
+                    recorder=recorder,
+                )
+            except Exception as exc:
+                recorder.record_cycle(
+                    observation=observation, decision=decision, executed_action=None,
+                    result={"status": "failed", "error_type": type(exc).__name__},
+                    screenshot=self._safe_screenshot(),
+                )
+                raise
             screenshot = self._safe_screenshot()
             recorder.record_cycle(
                 observation=observation,
@@ -95,6 +117,8 @@ class DiscoveryAgent:
                 screenshot=screenshot,
             )
             if decision.action == DiscoveryAction.FINISH:
+                if not result.get("receipt_reference") or not result.get("money_moved"):
+                    raise ValueError("Discovery cannot finish without a confirmed credit receipt")
                 finished = True
                 break
 
@@ -140,9 +164,18 @@ class DiscoveryAgent:
         frame_summaries: list[str] = []
         for frame in self.page.frames:
             try:
+                frame_selector = None
+                if frame != self.page.main_frame:
+                    host = frame.frame_element()
+                    frame_id = host.get_attribute("id")
+                    frame_name = host.get_attribute("name")
+                    if frame_id:
+                        frame_selector = f"iframe[id={json.dumps(frame_id)}]"
+                    elif frame_name:
+                        frame_selector = f"iframe[name={json.dumps(frame_name)}]"
                 frame_text = frame.locator("body").inner_text(timeout=1000)[:6000]
                 if frame_text:
-                    body_parts.append(frame_text)
+                    body_parts.append(f"frame_selector={frame_selector}:\n{frame_text}")
                 elements = frame.locator("a, button, input, select, textarea")
                 count = min(elements.count(), 100)
                 for index in range(count):
@@ -150,15 +183,22 @@ class DiscoveryAgent:
                         """el => ({
                             tag: el.tagName.toLowerCase(), id: el.id || null,
                             name: el.getAttribute('name'), type: el.getAttribute('type'),
+                            class: el.getAttribute('class'), href: el.getAttribute('href'),
+                            container: el.closest('form') ? {
+                                tag: 'form', id: el.closest('form').id,
+                                class: el.closest('form').className,
+                                action: el.closest('form').getAttribute('action')
+                            } : null,
                             text: (el.innerText || el.getAttribute('aria-label') || '').trim(),
                             value: el.tagName === 'INPUT' &&
                                 !['password', 'hidden'].includes((el.type || '').toLowerCase())
                                 ? el.value : null
                         })"""
                     )
+                    summary["frame_selector"] = frame_selector
                     interactive.append(str(summary)[:1000])
                 if frame != self.page.main_frame:
-                    frame_summaries.append(f"url={frame.url} elements={count}")
+                    frame_summaries.append(f"frame_selector={frame_selector} url={frame.url} elements={count}")
             except Exception:
                 continue
         return BrowserObservation(

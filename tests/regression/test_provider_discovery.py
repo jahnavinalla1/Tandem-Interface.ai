@@ -191,3 +191,42 @@ def test_provider_rejects_malformed_response() -> None:
                 observation=BrowserObservation(url="about:blank"),
             )
         )
+
+
+def test_strict_provider_schema_requires_nullable_properties() -> None:
+    schema = OpenAIResponsesProvider._strict_decision_schema()
+    assert set(schema['required']) == set(schema['properties'])
+    assert schema['additionalProperties'] is False
+    assert all('default' not in prop for prop in schema['properties'].values())
+
+
+def test_caller_goal_reaches_provider_and_false_finish_is_rejected(tmp_path: Path) -> None:
+    from tandem.config import settings
+    from tandem.discovery.agent import DiscoveryAgent
+
+    class Provider:
+        provider_name = 'test'
+        model = 'test'
+        contexts = []
+
+        def decide(self, context):
+            self.contexts.append(context)
+            return DiscoveryDecision(action='FINISH', semantic_target='receipt', rationale='done')
+
+    class Agent(DiscoveryAgent):
+        def _observe(self):
+            return BrowserObservation(url=settings.core_bank_url)
+
+        def _read_receipt(self):
+            return None, False
+
+        def _safe_screenshot(self):
+            return None
+
+    provider = Provider()
+    agent = Agent(page=None, provider=provider, evidence_root=tmp_path)
+    with pytest.raises(ValueError, match='confirmed credit receipt'):
+        agent.discover('My caller-supplied goal', settings.core_bank_url,
+                       dict(member_id='8830142', case_id='TEST', amount=1))
+    assert provider.contexts[0].objective == 'My caller-supplied goal'
+    assert list(tmp_path.glob('*/trace.json'))

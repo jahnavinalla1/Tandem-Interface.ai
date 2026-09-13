@@ -1,0 +1,22 @@
+{
+  "body_text": "frame_selector=None:\nCORE CONSOLE // SYM-KEYSTONE v11.4.82 // BRANCH: 001-CENTRAL // OPERATOR: AUTO_SVC\nSYSTEM MODULES\n1. Member Search\n2. Memo & Ref Lookup\n3. Direct Credit Entry\nframe_selector=iframe[id=\"core_workspace_frame\"]:\n\u26a0\ufe0f ACTION REQUIRES CONFIRMATION: IRREVERSIBLE MONEY MOVEMENT\n\nYou are about to post a provisional credit to the following account:\n\nTarget Member ID: 8830142\nTarget Account: CHK-8830142-01\nDispute Case Ref: D-DISC-0c4ff0e1d5a0\nCredit Amount: $150.00 USD\nMemo Description: Reg E Provisional Credit - Card Dispute\nPOST PROVISIONAL CREDIT NOW Cancel",
+  "frame_summaries": [
+    "frame_selector=iframe[id=\"core_workspace_frame\"] url=http://127.0.0.1:8001/workspace/credit/confirm elements=9"
+  ],
+  "interactive_elements": [
+    "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': None, 'text': '1. Member Search', 'value': None, 'frame_selector': None}",
+    "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/memos', 'container': None, 'text': '2. Memo & Ref Lookup', 'value': None, 'frame_selector': None}",
+    "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/credit/entry?member_id=8830142', 'container': None, 'text': '3. Direct Credit Entry', 'value': None, 'frame_selector': None}",
+    "{'tag': 'input', 'id': None, 'name': 'institution_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'input', 'id': None, 'name': 'member_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'input', 'id': None, 'name': 'account_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'input', 'id': None, 'name': 'case_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'input', 'id': None, 'name': 'amount', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'input', 'id': None, 'name': 'currency', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'input', 'id': None, 'name': 'admin_token', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'button', 'id': 'btn_commit_credit_172867', 'name': None, 'type': 'submit', 'class': 'btn-commit-final', 'href': None, 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': 'POST PROVISIONAL CREDIT NOW', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': {'tag': 'form', 'id': '', 'class': '', 'action': '/workspace/credit/commit'}, 'text': 'Cancel', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}"
+  ],
+  "title": "Core Banking Platform - Symitar / Keystone Legacy Host",
+  "url": "http://127.0.0.1:8001/"
+}

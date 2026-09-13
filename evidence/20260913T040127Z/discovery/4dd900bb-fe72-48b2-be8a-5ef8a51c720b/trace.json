@@ -1,0 +1,79 @@
+{
+  "actions": [
+    {
+      "action": "NAVIGATE",
+      "concrete_value": "http://127.0.0.1:8001",
+      "container_selector": null,
+      "frame_selector": null,
+      "guard_ref": null,
+      "input_name": null,
+      "is_mutating": false,
+      "locator_candidates": [],
+      "observed_text": null,
+      "selector": "http://127.0.0.1:8001",
+      "semantic_target": "surface://core_bank/home",
+      "step_id": "step_1_nav",
+      "timestamp": "2026-09-13T04:01:35.097766+00:00"
+    }
+  ],
+  "capability_id": "core.post_provisional_credit",
+  "completed_at": null,
+  "discovered_memo": null,
+  "events": [
+    {
+      "browser_observation": {
+        "body_text": "",
+        "frame_summaries": [],
+        "interactive_elements": [],
+        "title": "",
+        "url": "about:blank"
+      },
+      "cycle": 1,
+      "evidence_reference": "screenshots/cycle_001.png",
+      "executed_action": {
+        "action": "NAVIGATE",
+        "concrete_value": "http://127.0.0.1:8001",
+        "container_selector": null,
+        "frame_selector": null,
+        "guard_ref": null,
+        "input_name": null,
+        "is_mutating": false,
+        "locator_candidates": [],
+        "observed_text": null,
+        "selector": "http://127.0.0.1:8001",
+        "semantic_target": "surface://core_bank/home",
+        "step_id": "step_1_nav",
+        "timestamp": "2026-09-13T04:01:35.097766+00:00"
+      },
+      "model_decision": {
+        "action": "NAVIGATE",
+        "container_selector": null,
+        "frame_selector": null,
+        "guard_ref": null,
+        "input_name": null,
+        "is_mutating": false,
+        "locator_candidates": [],
+        "rationale": "Navigate to the target surface http://127.0.0.1:8001 to start member lookup.",
+        "selector": null,
+        "semantic_target": "Allowed surface URL",
+        "target_url": "http://127.0.0.1:8001"
+      },
+      "observation_reference": "observations/cycle_001.json",
+      "result": {
+        "status": "executed",
+        "url": "http://127.0.0.1:8001/"
+      },
+      "timestamp": "2026-09-13T04:01:35.150534+00:00"
+    }
+  ],
+  "evidence_directory": "/Users/nallajahnavi/Tandem--main/evidence/20260913T040127Z/discovery/4dd900bb-fe72-48b2-be8a-5ef8a51c720b",
+  "goal": "Find the supplied member, post the supplied provisional credit once, and verify the receipt",
+  "metadata": {},
+  "model": "gemini-3.6-flash",
+  "money_moved": false,
+  "provider": "gemini",
+  "run_id": "4dd900bb-fe72-48b2-be8a-5ef8a51c720b",
+  "started_at": "2026-09-13T04:01:28.739797+00:00",
+  "system": "core_bank",
+  "version": "1.0.0"
+}

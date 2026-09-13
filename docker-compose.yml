@@ -17,6 +17,10 @@ services:
       - CORE_BANK_2_PORT=8002
       - PROCESSOR_PORT=8003
       - DOCUMENTS_PORT=8004
+      - DISCOVERY_PROVIDER=${DISCOVERY_PROVIDER:-gemini}
+      - DISCOVERY_MODEL=${DISCOVERY_MODEL:-gemini-3.6-flash}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - PLAYWRIGHT_HEADLESS=true
       - TANDEM_DB_PATH=/app/data/tandem_ledger.db
       - TANDEM_ADMIN_TOKEN=${TANDEM_ADMIN_TOKEN:-tandem-local-dev-admin-token-change-me}

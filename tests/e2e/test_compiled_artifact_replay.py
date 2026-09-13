@@ -237,3 +237,19 @@ def test_discovery_compilation_and_zero_llm_replay(tmp_path: Path):
     assert llm_tracker.call_count == 0, (
         f"Replay of compiled artifact violated invariant: made {llm_tracker.call_count} LLM calls!"
     )
+
+
+def test_discovery_observation_identifies_iframe_and_stable_attributes(tmp_path):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.set_content('<iframe id="legacy" srcdoc="<form id=confirm><input name=member_id class=lookup></form>"></iframe>')
+        page.frame_locator('#legacy').locator('input').wait_for()
+        agent = DiscoveryAgent(page, provider=ScriptedDiscoveryProvider('http://127.0.0.1:8001'),
+                               evidence_root=tmp_path)
+        observation = agent._observe()
+        assert any('iframe[id="legacy"]' in summary for summary in observation.frame_summaries)
+        assert any("'name': 'member_id'" in item and 'iframe[id="legacy"]' in item
+                   and "'class': 'lookup'" in item and "'id': 'confirm'" in item
+                   for item in observation.interactive_elements)
+        browser.close()

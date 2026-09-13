@@ -1,5 +1,7 @@
 """Configuration management for Tandem."""
 
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,10 +32,12 @@ class Settings(BaseSettings):
     # Playwright
     playwright_headless: bool = True
 
-    # LLM keys for discovery (optional fallback available)
+    # Discovery requires the selected provider key; replay requires no model key.
+    discovery_provider: Literal["gemini", "openai"] = "gemini"
+    gemini_api_key: str = ""
     openai_api_key: str = ""
     anthropic_api_key: str = ""
-    discovery_model: str = "gpt-5"
+    discovery_model: str = ""  # Empty selects the provider default.
 
     # Base URLs
     @property

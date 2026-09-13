@@ -133,7 +133,7 @@ class OpenAIResponsesProvider:
                 "format": {
                     "type": "json_schema",
                     "name": "browser_discovery_decision",
-                    "schema": DiscoveryDecision.model_json_schema(),
+                    "schema": self._strict_decision_schema(),
                     "strict": True,
                 }
             },
@@ -157,6 +157,16 @@ class OpenAIResponsesProvider:
             return DiscoveryDecision.model_validate_json(output_text)
         except (ValidationError, ValueError) as exc:
             raise ValueError("Provider returned an invalid structured discovery decision") from exc
+
+    @staticmethod
+    def _strict_decision_schema() -> dict[str, Any]:
+        # Strict structured outputs require every property in required, including
+        # nullable fields that Pydantic otherwise represents as optional defaults.
+        schema = DiscoveryDecision.model_json_schema()
+        schema["required"] = list(schema["properties"])
+        for prop in schema["properties"].values():
+            prop.pop("default", None)
+        return schema
 
     @staticmethod
     def _extract_output_text(payload: dict[str, Any]) -> str:

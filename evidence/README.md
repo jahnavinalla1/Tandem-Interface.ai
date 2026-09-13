@@ -1,0 +1,31 @@
+# Assignment evidence
+
+The successful bundle is [20260913T161444Z](20260913T161444Z/manifest.json).
+It contains a genuine Gemini 3.6 Flash discovery, the compiled artifact, successful
+new-case replay and an injected-interstitial replay. Both replays used zero model
+calls. See [RUN_STATUS.md](RUN_STATUS.md) for verified results and earlier attempts.
+
+To produce another bundle:
+
+From the repository root, configure `GEMINI_API_KEY` in the ignored `.env` file and run:
+
+```sh
+.venv/bin/python -m scripts.assignment_evidence \
+  --goal "Find the supplied member, post the supplied provisional credit once, and verify the receipt" \
+  --target http://127.0.0.1:8001
+```
+
+The command starts local simulator services if needed and uses synthetic fixtures.
+It posts simulated credits with unique case IDs; it does not reset existing databases.
+Use a fresh local simulator instance with default modes. It temporarily enables a
+compliance interstitial for the exceptional replay and disables it afterward.
+
+A timestamped folder contains the real discovery trace, per-cycle observations and
+screenshots, `capability.yaml`, successful and exceptional replay JSON and screenshots,
+and a manifest binding both replays to the discovery run and artifact hash. Replay
+loads that exact saved YAML, uses a new case ID, and verifies zero model calls.
+A manifest is written only after the expected outcomes pass. Failed runs retain
+partial evidence; do not describe them as successful submissions.
+
+Review generated files before making them public. Screenshots and free-text page
+observations are not PII-redacted; use only the local synthetic simulator.

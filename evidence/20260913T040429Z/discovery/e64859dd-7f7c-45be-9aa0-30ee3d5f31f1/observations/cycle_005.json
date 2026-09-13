@@ -1,0 +1,20 @@
+{
+  "body_text": "frame_selector=None:\nCORE CONSOLE // SYM-KEYSTONE v11.4.82 // BRANCH: 001-CENTRAL // OPERATOR: AUTO_SVC\nSYSTEM MODULES\n1. Member Search\n2. Memo & Ref Lookup\n3. Direct Credit Entry\nframe_selector=iframe[id=\"core_workspace_frame\"]:\nPOST PROVISIONAL CREDIT ENTRY\nTarget Member ID: 8830142\nAccount Number: CHK-8830142-01\nMember Name: Jane DisputeMember\nCurrent Ledger Balance: $1,240.50\nCase / Dispute Ref: \nCredit Amount (USD): \nAdjustment Reason: \nReview & Continue >>",
+  "frame_summaries": [
+    "frame_selector=iframe[id=\"core_workspace_frame\"] url=http://127.0.0.1:8001/workspace/credit/entry?member_id=8830142 elements=7"
+  ],
+  "interactive_elements": [
+    "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/search', 'container': None, 'text': '1. Member Search', 'value': None, 'frame_selector': None}",
+    "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/memos', 'container': None, 'text': '2. Memo & Ref Lookup', 'value': None, 'frame_selector': None}",
+    "{'tag': 'a', 'id': None, 'name': None, 'type': None, 'class': None, 'href': '/workspace/credit/entry?member_id=8830142', 'container': None, 'text': '3. Direct Credit Entry', 'value': None, 'frame_selector': None}",
+    "{'tag': 'input', 'id': None, 'name': 'member_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_594378', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'input', 'id': None, 'name': 'account_id', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_594378', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'input', 'id': None, 'name': 'admin_token', 'type': 'hidden', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_594378', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'input', 'id': 'case_ref_597859', 'name': 'case_id', 'type': 'text', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_594378', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': 'D-8842', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'input', 'id': 'credit_amount_429742', 'name': 'amount', 'type': 'number', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_594378', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': '340.00', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'input', 'id': 'credit_memo_374890', 'name': 'reason', 'type': 'text', 'class': None, 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_594378', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': '', 'value': 'Reg E Provisional Credit - Card Dispute', 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}",
+    "{'tag': 'button', 'id': 'btn_proceed_confirm_736002', 'name': None, 'type': 'submit', 'class': 'btn-proceed', 'href': None, 'container': {'tag': 'form', 'id': 'credit_form_594378', 'class': '', 'action': '/workspace/credit/confirm'}, 'text': 'Review & Continue >>', 'value': None, 'frame_selector': 'iframe[id=\"core_workspace_frame\"]'}"
+  ],
+  "title": "Core Banking Platform - Symitar / Keystone Legacy Host",
+  "url": "http://127.0.0.1:8001/"
+}
