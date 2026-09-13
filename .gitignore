@@ -32,6 +32,8 @@ ENV/
 
 # Testing
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .coverage
 htmlcov/
 
@@ -46,6 +48,7 @@ htmlcov/
 # IDE
 .idea/
 .vscode/
+.claude/
 *.swp
 *.swo
 

@@ -116,7 +116,78 @@ When compliance interstitials (e.g. BSA/AML holds) appear, automation yields its
 
 ---
 
-## 4. Repository Structure
+## 4. How Discovery Works — What the Model Sees and Does
+
+Discovery is the *only* place an LLM is ever called. `DiscoveryAgent.discover_provisional_credit()`
+(`tandem/discovery/agent.py`) runs a bounded **observe → decide → act** loop against a
+real, running instance of the hostile core banking simulator, for up to 20 cycles:
+
+1. **Observe** (`_observe`): reads the page title, up to 12,000 characters of visible
+   body text per frame, and every interactive element (`a, button, input, select,
+   textarea`) with its tag, id, name, type, and visible text/value — `password` and
+   `hidden` inputs are excluded before this ever leaves the browser. This becomes a
+   typed `BrowserObservation`, not raw HTML dumped into a prompt.
+2. **Decide**: that observation, the objective, the declared inputs (secrets
+   redacted), and the last 8 prior decision/result events are sent to
+   `OpenAIResponsesProvider.decide()`, which returns exactly one structured
+   `DiscoveryDecision` — never free-form text the runtime has to parse or interpret.
+   A Pydantic validator rejects structurally invalid decisions before they ever reach
+   the browser (e.g. a `SUBMIT` that doesn't declare `is_mutating` + a
+   `container_selector` + a `guard_ref`).
+3. **Act**: the agent executes exactly that one decision, takes a screenshot, and
+   records everything through `TraceRecorder` before observing again.
+4. Discovery ends when the model emits `FINISH`. The agent then reads the *actual*
+   receipt (memo code, money-moved flag) from the live page — success is grounded in
+   real page state, not the model's self-report.
+
+**What gets saved, durably, once discovery succeeds:**
+- **Per-run evidence** under `evidence/discovery/<run_id>/`: every cycle's
+  observation, decision, executed action, result, and screenshot.
+- **A compiled capability artifact**: `CapabilityCompiler.compile()` turns the trace's
+  *executed actions* (not the model's raw reasoning) into a `CapabilityDefinition` —
+  concrete Playwright steps with templated inputs (`{{input.member_id}}`), a typed
+  effect spec (COMMIT/READ, idempotency key, precheck/postcheck/reconciliation), and a
+  `scoped_guard` pinned to the exact container the model clicked in. The compiler
+  refuses to compile if the trace's recorded actions don't match its own durable
+  decision events — it can't silently drift from what actually happened. The result
+  is canonicalized, SHA-256 hashed, and written to `capabilities/compiled/<id>.yaml`.
+  A real example from an actual run is checked in at
+  [`capabilities/compiled/demo_post_provisional_credit.yaml`](capabilities/compiled/demo_post_provisional_credit.yaml).
+
+Run it yourself with `uv run python scripts/demo.py --scenario discovery` — **this one
+scenario requires a real `OPENAI_API_KEY`** (see [Limitations](#9-limitations-and-design-decisions) below).
+
+---
+
+## 5. How Deterministic Replay Works Without the Model in the Loop
+
+Every other scenario replays a *compiled* capability, and the LLM is never imported,
+let alone called:
+
+- `DeterministicExecutor.execute()` (`tandem/replay/executor.py`) reads a
+  `CapabilityDefinition`'s `steps` list and calls Playwright directly — `NAVIGATE`,
+  `FILL`, `CLICK`, `SUBMIT` — filling in each step's input template
+  (`{{input.case_id}}` → the actual case ID) with no model call anywhere in the path.
+- Immediately before any `SUBMIT` step, `verify_control_scoped_guard()` re-reads the
+  *exact* member/account/amount values inside the immediate container of the submit
+  control — not a cached value, not the search-results row — and hard-fails the whole
+  capability if they don't match what was intended.
+- **How we know the model truly isn't called**, not just claimed: `llm_tracker`
+  (`tandem/policy/telemetry.py`) is a single process-wide counter incremented in
+  exactly one place — `OpenAIResponsesProvider.decide()`, which the replay path never
+  imports. Every replay test explicitly asserts
+  `llm_tracker.call_count == 0` after execution (see
+  `tests/e2e/test_deterministic_replay.py` and every `replay-*` scenario in
+  `scripts/demo.py`) — this is a checked runtime invariant on every CI run, not a
+  docstring promise.
+- Replaying the *same, unmodified, hash-verified* artifact against a structurally
+  different UI (Institution Beta) works too, by swapping only a runtime **surface
+  overlay** — proving the compiled capability generalizes without re-discovery
+  (`scripts/demo.py --scenario second-institution`).
+
+---
+
+## 6. Repository Structure
 
 ```
 Tandem/
@@ -145,10 +216,12 @@ Tandem/
 │   ├── replay/                    # DeterministicExecutor, EffectEngine, reconciliation
 │   ├── surfaces/                  # Surface abstraction, PlaywrightSurface, overlays
 │   └── workflow/                  # RegEWorkflow state machine & 12 CFR 1005.11 deadlines
-├── tests/                         # Complete automated test suite (45 tests)
+├── tests/                         # Automated suite: 185 tests (unit/integration/e2e/regression)
 │   ├── e2e/                       # Zero-LLM deterministic replay & compiled artifact runs
 │   ├── integration/               # Crash recovery, effect protocol, handoff, overlays, API
+│   ├── regression/                # One test file per audit finding (see REMEDIATION_STATUS.md)
 │   └── unit/                      # Discovery compiler, domain models, surface units
+├── audit_tests/                   # 10 tests preserved from the independent adversarial audit
 ├── Dockerfile                     # Containerization for standalone demonstration
 ├── docker-compose.yml             # Orchestration for simulators and Tandem console
 ├── Makefile                       # Developer shortcuts (setup, test, dev, demo-*)
@@ -157,10 +230,11 @@ Tandem/
 
 ---
 
-## 5. Quickstart & Installation
+## 7. Quickstart & Installation
 
 ### Prerequisites
-- Python 3.12+
+- Python 3.12+ (a `.python-version` file pins exactly 3.12 so `uv sync` doesn't pick a
+  different interpreter you happen to have installed)
 - `uv` package manager ([astral.sh/uv](https://astral.sh/uv))
 
 ### Setup
@@ -179,12 +253,21 @@ uv run playwright install chromium
 
 ### Running the Test Suite
 ```bash
-# Run all unit, integration, and E2E tests
+# Run all unit, integration, e2e, and regression tests (185 tests)
 uv run pytest tests -v
 
-# Run the preserved independent adversarial audit suite
+# Run the preserved independent adversarial audit suite (10 tests)
 uv run pytest audit_tests -v
 ```
+
+> **Don't run this while `scripts/start_services.py` is already running in another
+> terminal.** `tests/conftest.py` starts the simulators itself (in-process, so a
+> couple of tests can flip failure switches directly on the Python objects handling
+> requests); if an external `start_services.py` instance already owns those ports,
+> pytest reuses it instead, and those specific tests will fail because their
+> in-process state changes never reach the process actually serving the request.
+> Stop any standalone services first, or just run tests in a separate terminal from a
+> clean slate.
 
 ### Starting the Interactive Operator Console & Simulators
 ```bash
@@ -208,13 +291,13 @@ it automatically.
 
 ---
 
-## 6. Demonstration Scenarios
+## 8. Demonstration Scenarios
 
 Tandem includes an interactive CLI (`scripts/demo.py`) that runs the 8 specification scenarios:
 
 | # | Scenario CLI Command | Description | Architectural Invariant Verified |
 |---|---|---|---|
-| **1** | `uv run python scripts/demo.py --scenario discovery` | LLM agent explores hostile UI and compiles capability | Synthesizes typed YAML with SHA-256 digest |
+| **1** | `uv run python scripts/demo.py --scenario discovery` | LLM agent explores hostile UI and compiles capability | Synthesizes typed YAML with SHA-256 digest — **requires a real `OPENAI_API_KEY`** |
 | **2** | `uv run python scripts/demo.py --scenario replay-new-case` | Replays capability on fresh dispute case | **Strict Zero-LLM Invariant:** `llm_call_count == 0` |
 | **3** | `uv run python scripts/demo.py --scenario replay-same-case` | Re-executes capability on already-credited case | Idempotency precheck returns `ALREADY_APPLIED`; 0 duplicate credit |
 | **4** | `uv run python scripts/demo.py --scenario transposed-id` | Confusable account selection (`8830124` vs `8830142`) | Scoped container guard halts with `ENTITY_BINDING_MISMATCH` |
@@ -227,12 +310,84 @@ To run all 8 scenarios sequentially:
 ```bash
 uv run python scripts/demo.py --scenario all
 ```
+> **Without an `OPENAI_API_KEY` set, `--scenario all` fails immediately at scenario 1**
+> (discovery constructs a real `OpenAIResponsesProvider` and refuses to run without a
+> key — it does not silently skip or fall back to a fake response). Run scenarios 2–8
+> individually to see everything except live discovery; see
+> [Limitations](#9-limitations-and-design-decisions) below.
 
 ---
 
-## 7. Deep-Dive Documentation Links
+## 9. Limitations and Design Decisions
+
+Rather than presenting this as finished, here's what's actually true about its current
+state — some by deliberate scope choice, some as known gaps.
+
+**Discovery has only been exercised on one capability.** `DiscoveryAgent` has been run
+against `core.post_provisional_credit` — a single flow, in one hostile UI. The
+observe/decide/act loop and the compiler are general-purpose, but "discovery
+generalizes to arbitrary tasks" hasn't been proven by actually running it against a
+second, different flow. That's the top item on my own follow-up list (see
+[docs/interviewer-questions.md](docs/interviewer-questions.md), §4).
+
+**No live `OPENAI_API_KEY` was available while preparing this submission**, so the
+discovery scenario's *code path* is verified (real HTTP client, real structured-output
+schema, real Pydantic validation of the model's decisions, a mocked-provider
+regression test exercising the exact same flow in
+`tests/regression/test_provider_discovery.py`), but a genuine live model call has not
+been run and recorded as part of this delivery. Everything downstream of discovery —
+the compiled artifact, deterministic replay, the zero-LLM invariant — has been
+verified for real, repeatedly, including against a completely fresh clone of this
+repository.
+
+**The SQLite ledger is not a "swap one config string for Postgres" story.** The
+append-only enforcement that closes the audit's H-09 finding is implemented as
+SQLite-specific triggers (`RAISE(ABORT, ...)`), and `tandem/ledger/database.py`
+hardcodes SQLite PRAGMAs. A real multi-node deployment needs a genuine migration —
+equivalent Postgres constraints/triggers, or application-level immutability — not a
+connection-string change. SQLite in WAL mode was chosen deliberately for
+zero-dependency crash resilience in a single-node demo, which is what this is.
+
+**`HandoffCoordinator.operator_clear_compliance()` isn't wired to an HTTP route yet.**
+It's exercised directly in Python (`scripts/demo.py`'s human-handoff scenario calls it
+in-process against the same browser page automation was using), but a remote operator
+console user can't yet trigger that specific action over HTTP the way lease
+claim/release already can. The general brokered browser-session action API this would
+route through already exists (see `AUDIT_REPORT.md`'s H-05 finding).
+
+**No Docker daemon was available to run a real `docker build`.** The Dockerfile's
+layer ordering was fixed and is statically verified by
+`tests/regression/test_build_contract.py`, but an actual image build has not been
+exercised end-to-end in this environment.
+
+**Synchronous Playwright, not a distributed worker fleet.** `DeterministicExecutor`
+runs one capability at a time in-process, which keeps crash-injection testing and
+reasoning about execution order simple. A production deployment processing many
+concurrent disputes would want a task queue dispatching headless sessions across
+worker nodes — a scaling change, not a correctness one.
+
+**M-03 (evidence/procedure abstractions) is only partially fixed.** See
+`REMEDIATION_STATUS.md` — some originally-decorative abstractions have been wired into
+real runtime paths; a few are still scheduled follow-up work, tracked honestly rather
+than hidden.
+
+**On the audit itself** — this isn't a project that was built and never checked. An
+independent adversarial audit (`AUDIT_REPORT.md`) found this codebase scored **32/100,
+verdict NOT READY** at one point: discovery was hardcoded rather than model-driven, two
+workers could double-post the same credit, a guard could be bypassed by swapping a
+hidden form value, the "append-only" ledger was provably mutable, and admin routes had
+no authentication at all. `REMEDIATION_STATUS.md` tracks every one of those findings
+through to a fix, with its own regression test and commit hash — a finding is only
+marked FIXED after its test *and* the full suite *and* lint *and* type-check all pass.
+That ledger is the honest record of what's actually been verified here, not a claim to
+take on faith.
+
+---
+
+## 10. Deep-Dive Documentation Links
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): Complete breakdown of the 14-step Effect-Aware Commit Protocol, container scoping, and SQLite WAL ledger design.
-- [DEMO.md](DEMO.md): Step-by-step walkthrough for reproducing and inspecting all 8 scenarios.
 - [SECURITY.md](SECURITY.md): Threat model, credential boundaries, and financial safety controls.
-- [docs/interviewer-questions.md](docs/interviewer-questions.md): Hard technical questions, trade-offs, and architectural justifications.
+- [docs/interviewer-questions.md](docs/interviewer-questions.md): Fact-checked technical Q&A, trade-offs, what's left to improve, and which parts were AI-assisted.
+- [AUDIT_REPORT.md](AUDIT_REPORT.md): The independent adversarial audit that found the issues described above.
+- [REMEDIATION_STATUS.md](REMEDIATION_STATUS.md): Every audit finding tracked through to a verified fix.

@@ -1,104 +1,227 @@
-﻿# Tandem: Technical Interviewer & Architectural Review Guide
+# Tandem: Technical Interviewer & Architectural Review Guide
 
-This guide compiles anticipated questions, design trade-offs, and architectural justifications for technical interviewers, system architects, and engineering leaders evaluating the Tandem platform.
+This guide compiles anticipated questions, design trade-offs, and architectural
+justifications for anyone evaluating Tandem. Every code reference below was checked
+against the actual source at the time of writing — see the cited `file:line` for each
+claim rather than taking it on faith.
 
 ---
 
 ## 1. Foundational Architecture & Philosophy
 
-### Q1: Why not simply use an autonomous LLM agent (e.g., Browser-Use, Claude Computer Use, LangGraph) for production execution?
-**Answer**:
-Autonomous LLM agents are non-deterministic, high-latency, and prone to hallucinations. In financial systems, the central risk is:
+### Q1: Why not simply use an autonomous LLM agent (e.g. Browser-Use, Claude Computer Use, LangGraph) for production execution?
+**Answer:**
+Autonomous LLM agents are non-deterministic, high-latency, and prone to hallucination.
+In financial systems, the central risk is:
 > *"The money moved. The procedure didn't finish."*
 
-If an autonomous LLM agent crashes or receives a 504 timeout after posting provisional credit, its next step is stochastic. It might:
-1. Re-run the entire prompt and click "Post Credit" again, issuing duplicate credit.
-2. Select a confusable customer from a fuzzy search result.
-3. Hallucinate that the transaction succeeded when it failed, leaving the procedure orphaned and violating federal statutory deadlines.
-4. Incur massive API costs ($0.05–$0.20 per browser step) and 3–10 second latency per action.
+If an agent crashes or receives a timeout after posting a provisional credit, its next
+step is stochastic. It might re-run the whole flow and post credit twice, pick a
+confusable customer from a fuzzy search, hallucinate that a failed transaction
+succeeded, or simply cost \$0.05–\$0.20 and 3–10 seconds per browser step.
 
-**Tandem's Solution**:
-Tandem establishes a **Zero-LLM Replay Invariant**. The LLM is strictly quarantined to **Discovery**—exploring hostile, unfamiliar interfaces and compiling typed, versioned, cryptographic YAML capability artifacts. In production, **replay is 100% deterministic**, executing raw Playwright commands at sub-100ms speeds with **0 LLM calls**, backed by a formal effect protocol.
+**Tandem's answer:** a **Zero-LLM Replay Invariant**. The LLM is quarantined to
+**discovery** — exploring an unfamiliar UI once and compiling a typed, versioned,
+hash-verified YAML capability. Production replay executes that artifact with raw
+Playwright calls, asserting `llm_tracker.call_count == 0` in the test suite
+(`tests/e2e/test_deterministic_replay.py`).
 
----
-
-### Q2: Why not just write standard RPA (UiPath) or raw Playwright scripts?
-**Answer**:
-Standard RPA scripts and raw Playwright test scripts suffer from two fatal weaknesses:
-1. **Lack of Effect Semantics**: A raw Playwright script does not distinguish between a benign click (`PROBE`, e.g., expanding an accordion or navigating a menu) and an irreversible state-mutating transaction (`COMMIT`, e.g., posting general ledger credit or filing a chargeback). If a step fails, RPA either crashes completely or retries blindly.
-2. **Selector Fragility & Zero Drift Awareness**: Traditional scripts hardcode CSS/XPath selectors. When an institution updates its styling or a second bank branch uses a different UI skin, scripts fail with opaque timeout errors. Tandem's **Surface Overlays** decouple semantic targets from DOM implementations, and its drift detection provides actionable diagnostic failures.
-
----
-
-## 2. Distributed State, Concurrency & Idempotency
-
-### Q3: Walk me through the lifecycle of a `COMMIT` capability. How is double-credit prevented?
-**Answer**:
-Tandem executes every irreversible capability through a strict **14-step Effect Protocol**:
-1. **Intent Logging**: Appends a `PENDING_COMMIT` event with a unique procedure run ID to the SQLite WAL ledger.
-2. **Policy Bounds Check**: Validates that transaction amounts, currencies, and memo types comply with domain rules (e.g., amount between \$0.01 and \$5,000.00).
-3. **Idempotency Precheck**: Before interacting with the DOM, queries the simulator/backend (`check_provisional_credit_exists`). If a credit matching the member and case already exists, execution halts with `SKIPPED_IDEMPOTENT` (`ALREADY_APPLIED`).
-4. **Scoped Container Verification**: Locates the boundary container (e.g., `#account-detail-container`) and verifies that the displayed member ID exactly matches the case payload, preventing misdirected funds on confusable/transposed accounts.
-5. **DOM Action**: Executes the Playwright keyboard/mouse interactions.
-6. **Postcheck Verification**: Immediately inspects the updated DOM and transaction table to confirm receipt of the memo code.
-7. **Ledger Commit**: Appends `CREDIT_POSTED` with memo reference to the append-only ledger.
+### Q2: Why not just write standard RPA (UiPath-style) or raw Playwright scripts?
+**Answer:**
+Two failures raw scripts don't solve:
+1. **No effect semantics.** A raw script can't distinguish a benign click from an
+   irreversible mutation. Tandem's `EffectClass.COMMIT` vs `READ`
+   (`tandem/domain/effects.py`) makes that distinction structural, not incidental —
+   every `COMMIT` capability is *required* to declare a precheck, postcheck,
+   reconciliation strategy, and an adjacent structural guard, or artifact validation
+   rejects it (`tandem/domain/capability.py`).
+2. **Selector fragility with zero drift awareness.** Hardcoded selectors break the
+   moment a second institution's UI differs. Tandem's surface overlays
+   (`tandem/surfaces/overlays.py`) decouple semantic targets from DOM implementation —
+   the *same* artifact replays against Institution Beta's differently-styled UI by
+   swapping only the overlay, still with 0 LLM calls (`scripts/demo.py`'s
+   `run_second_institution`).
 
 ---
 
-### Q4: How does Tandem handle network drops or HTTP 504 timeouts on write operations?
-**Answer**:
-When an external banking service or document generator drops the connection or times out, standard software retries the request. In financial operations, this is dangerous because the remote server may have processed the credit before the connection died.
+## 2. Discovery — What the Model Sees and Does
 
-Tandem enters the **Reconciliation Protocol**:
-1. Categorizes the event as `UNCERTAIN_EFFECT`.
-2. Prohibits automatic retry.
-3. Executes a specialized out-of-band reconciliation probe (`query_transaction_by_reference`).
-4. If the probe confirms the effect occurred, it updates the ledger and advances state.
-5. If the probe cannot verify state, it raises a fatal `UNCERTAIN_EFFECT` alert, transitions case ownership to `HUMAN`, and triggers an operator notification.
+### Q3: Walk me through exactly what happens during discovery. What does the model actually see?
+**Answer:** `DiscoveryAgent.discover_provisional_credit()` (`tandem/discovery/agent.py:42`)
+runs a bounded observe → decide → act loop, up to `max_cycles` (default 20):
+
+1. **Observe** (`_observe`, `tandem/discovery/agent.py:133`): reads the page title, up
+   to 12,000 characters of visible body text per frame, and a list of every
+   interactive element (`a, button, input, select, textarea`) with its tag, id, name,
+   type, visible text, and non-sensitive value (`password`/`hidden` inputs are
+   excluded at the point of observation). This becomes a `BrowserObservation`
+   (`tandem/discovery/provider.py:24`) — a bounded, typed snapshot, not raw HTML.
+2. **Decide**: that observation, the stated objective, the declared inputs (with
+   `redact_secrets()` applied), and the last 8 prior decision/result events are sent
+   to `OpenAIResponsesProvider.decide()` (`tandem/discovery/provider.py:95`), which
+   asks the model for exactly one structured decision — never free-form code or
+   natural-language instructions the runtime has to interpret.
+3. **The model's output is a validated Pydantic model, not raw text.**
+   `DiscoveryDecision` (`tandem/discovery/provider.py:36`) only permits five actions —
+   `NAVIGATE`, `FILL`, `CLICK`, `SUBMIT`, `FINISH` — and a `@model_validator` rejects
+   structurally invalid decisions before they ever reach the browser: `FILL` without a
+   declared `input_name`, `SUBMIT` without `is_mutating` + `container_selector` +
+   `guard_ref`, any other action incorrectly marked mutating.
+4. **Act**: the agent executes exactly that one decision against the real browser
+   (`_execute_decision`, `tandem/discovery/agent.py:172`), takes a screenshot, and
+   records everything via `TraceRecorder` before looping back to Observe.
+5. Discovery ends when the model emits `FINISH`; the agent then reads the actual
+   receipt (memo code, money-moved flag) from the page — the trace's success claim is
+   grounded in the real page state, not the model's self-report.
+
+### Q4: How does a successful discovery run get "recorded" and turned into something replayable?
+**Answer:** Two things happen, both durable:
+
+1. **Evidence, per run** (`TraceRecorder`, `tandem/discovery/recorder.py`): every cycle
+   — the observation, the model's decision, the action actually executed, the result,
+   and a screenshot — is written under `evidence/discovery/<run_id>/`, keyed by a
+   UUID `run_id`. This is the audit trail of *how* the model found the flow.
+2. **The compiled capability** (`CapabilityCompiler.compile()`,
+   `tandem/discovery/compiler.py:44`): once discovery finishes, the compiler turns the
+   trace's *executed actions* (not the model's raw reasoning) into a
+   `CapabilityDefinition` — concrete Playwright steps with literal selectors,
+   templated inputs (e.g. `{{input.member_id}}`), an effect spec (COMMIT/READ,
+   idempotency key, precheck/postcheck/reconciliation), and a `scoped_guard` pinned to
+   the container the model actually clicked in. The compiler asserts the trace's
+   recorded actions match its durable provider-decision events before it will compile
+   at all (`compiler.py:53`) — it can't silently drift from what really happened.
+   The result is canonicalized, hashed (SHA-256), and written to
+   `capabilities/compiled/<capability_id>.yaml` with the hash in both a header comment
+   and a schema field. A checked-in example from a real run is at
+   `capabilities/compiled/demo_post_provisional_credit.yaml`.
+
+### Q5: How do you actually know the model isn't being called during replay?
+**Answer:** Three independent layers, not just a docstring claim:
+1. `llm_tracker` (`tandem/policy/telemetry.py`) is a single process-wide counter
+   incremented only inside `OpenAIResponsesProvider.decide()`
+   (`tandem/discovery/provider.py`) — the only code path that ever calls out to a
+   model.
+2. `DeterministicExecutor.execute()` (`tandem/replay/executor.py:45`) never imports or
+   references the discovery provider at all — replay's action loop reads a compiled
+   `CapabilityDefinition`'s steps and calls Playwright directly.
+3. Every replay test explicitly asserts the counter is unchanged after execution
+   (e.g. `assert llm_tracker.call_count == 0` in `tests/e2e/test_deterministic_replay.py`
+   and in `scripts/demo.py`'s replay scenarios) — this isn't a claim you have to trust,
+   it's a runtime invariant checked on every CI run.
 
 ---
 
-### Q5: Why did you choose an SQLite WAL ledger over Postgres or Redis?
-**Answer**:
-1. **Zero-Dependency Crash Resilience**: A browser automation agent frequently runs in containerized workers or edge nodes. External network failures should not disrupt the agent's ability to atomically record its own intent before issuing a browser click.
-2. **Write-Ahead Logging (WAL)**: SQLite in WAL mode allows concurrent readers (e.g., the Operator API and Dashboard) while a worker process is appending events, with `busy_timeout=30000` handling contention cleanly.
-3. **Repository Pattern Portability**: The ledger is abstracted through `LedgerRepository` and SQLAlchemy ORM models (`ProcedureCaseRecord`, `ProcedureEventRecord`). In an enterprise deployment with thousands of parallel workers, swapping to a distributed PostgreSQL cluster requires changing one configuration string (`DATABASE_URL`) without modifying a single line of domain or workflow logic.
+## 3. Deterministic Replay & the Effect Protocol
+
+### Q6: Walk me through the lifecycle of a COMMIT capability. How is double-credit prevented?
+**Answer:** `EffectEngine.execute_capability()` (`tandem/replay/engine.py`) runs each
+`COMMIT` capability through a fixed sequence:
+1. **Precheck** (`execute_precheck()`, `tandem/replay/precheck.py:15`): an HTTP GET
+   against the target's own state before touching the DOM. A positive match returns
+   `ExecutionOutcome(category=BUSINESS_OUTCOME, code=ALREADY_APPLIED)` and the engine
+   halts — nothing is clicked, nothing moves.
+2. **Bounds check**: policy validates the amount against `capabilities/core/post_provisional_credit.yaml`'s declared `bounds` (currently `max_amount: 500.00`,
+   `currency: USD`), enforced in `tandem/policy/rules.py`.
+3. **Scoped guard** (`verify_control_scoped_guard()`, `tandem/replay/guards.py:11`):
+   immediately before the mutating click, re-reads the *exact* member/account/amount
+   values inside the immediate container of the submit control — not the search
+   results list, not a cached value. A mismatch raises `EntityBindingMismatchError` or
+   `AmountMismatchError`, which the executor maps to
+   `OutcomeCategory.HARD_FAILURE` / `OutcomeCode.ENTITY_BINDING_MISMATCH` or
+   `AMOUNT_MISMATCH` — zero money moved.
+4. **Actuation**: the deterministic Playwright click.
+5. **Postcheck** (`execute_postcheck()`, `tandem/replay/postcheck.py:14`): an
+   independent HTTP GET against the target confirms the effect actually landed —
+   Tandem never trusts a "Success!" page alone.
+6. **Reconciliation on ambiguity** (`reconcile_commit_execution()`,
+   `tandem/replay/reconciliation.py:11`): if the browser action itself failed or timed
+   out after the guard passed, this re-runs the postcheck. If it can positively
+   confirm absence, the outcome is `CONFIRMED_NOT_APPLIED` (safe to retry). If it
+   can't determine either way, the outcome is `OutcomeCategory.UNCERTAIN_EFFECT` /
+   `OutcomeCode.UNCERTAIN_EFFECT`, and the engine refuses to retry automatically —
+   the case is escalated to a human instead.
+
+### Q7: How does Tandem handle a network drop or 504 on a write?
+**Answer:** Covered above (reconciliation step). The important design point: Tandem
+never conflates "the browser action raised an exception" with "the effect didn't
+happen." Those are different facts, and only the target system's own state (via
+postcheck) can resolve which one is true.
+
+### Q8: Why SQLite in WAL mode instead of Postgres or Redis for the ledger?
+**Answer, honestly stated:**
+1. **Zero-dependency crash resilience for a single-node demo.** A worker can
+   atomically record its own intent before issuing a browser click without depending
+   on a separate database service being reachable.
+2. **WAL mode** (`PRAGMA journal_mode=WAL`, `busy_timeout=30000`,
+   `tandem/ledger/database.py`) lets the operator console read concurrently while a
+   worker appends events.
+3. **This is not a "just change one connection string" story to Postgres**, and I
+   won't claim otherwise: `tandem/ledger/database.py` hardcodes a `sqlite:///` URL,
+   sets SQLite-specific PRAGMAs, and — more importantly — the append-only enforcement
+   added to fix the audit's H-09 finding ("the append-only ledger claim is false") is
+   implemented as **SQLite-specific triggers** using `RAISE(ABORT, ...)` syntax. A
+   real multi-node deployment would need a genuine migration: either equivalent
+   Postgres triggers/constraints, or moving immutability enforcement into the
+   application layer. That's real, scoped follow-up work, not a config change.
+
+### Q9: How does Tandem prevent a human specialist and automation from conflicting?
+**Answer:** A single-owner lease with a fencing token per case
+(`tandem/handoff/coordinator.py`). The operator console exposes
+`POST /cases/{case_id}/claim_lease` and `POST /cases/{case_id}/release_lease`
+(`tandem/api/app.py`, both admin-token-gated); if automation attempts to act on a
+case a human currently owns, the engine raises `LeaseConflictError` before touching
+the browser.
+
+**Known gap, stated plainly:** `HandoffCoordinator.operator_clear_compliance()`
+(`tandem/handoff/coordinator.py`) — the method that actually clears a compliance
+interstitial on the shared browser session — is exercised directly in Python (see
+`scripts/demo.py`'s `run_human_handoff`, which calls it in-process against the same
+`page` object automation was using) but is **not yet wired to an authenticated HTTP
+route** a remote operator-console user could trigger for that specific action. The
+general brokered browser-session action API exists (see `AUDIT_REPORT.md`'s H-05
+finding and its fix) for bounded actions on a claimed session; this specific
+compliance-clear helper doesn't route through it yet. If I had another week, this is
+one of the first things I'd finish.
 
 ---
 
-## 3. Regulatory & Domain Specifics
+## 4. What I'd Improve With Another Week
 
-### Q6: What is Regulation E (12 CFR § 1005.11) and why is the 10-day statutory clock critical?
-**Answer**:
-Under Federal Reserve Regulation E (Consumer Financial Protection Bureau 12 CFR § 1005.11(c)), financial institutions must investigate consumer notices of unauthorized electronic fund transfers:
-- If the institution cannot complete its investigation within **10 business days** of receiving notice, it **must provisionally credit** the consumer’s account for the disputed amount (plus interest if applicable) while continuing the investigation.
-- If provisional credit is not posted within 10 business days, the institution faces statutory penalties, compliance findings, and CFPB consent orders.
-- If provisional credit is posted, the bank has up to 45 (or 90) calendar days to complete the investigation.
-
-Tandem's `StatutoryDeadlineMonitor` tracks business days (excluding weekends and federal banking holidays), warning operators when cases approach the 10-day limit and prioritizing capability execution accordingly.
-
----
-
-### Q7: How does Tandem prevent human specialists and automated agents from conflicting (Split-Brain)?
-**Answer**:
-Tandem implements an atomic **Single-Owner Lease Model**:
-- Every case in the ledger has a `lease_owner` field (`AUTOMATION` or `HUMAN`).
-- When automation encounters a compliance interstitial (e.g., signature verification required, suspicious KYC alert), `HandoffCoordinator` sets `lease_owner = "HUMAN"` and logs `HANDOFF_REQUESTED`.
-- If an automated worker attempts to execute steps on a case owned by `HUMAN`, the engine immediately throws `LeaseConflictError`.
-- Once the specialist resolves the issue in the banking console, they clear the handoff via the Operator API (`POST /api/cases/{case_id}/handoff/clear`), atomically reassigning the lease to `AUTOMATION`.
+In priority order:
+1. **Wire `operator_clear_compliance` through the HTTP browser-session action API**
+   (see Q9) instead of only being callable in-process.
+2. **A real Postgres-compatible ledger path** for the append-only trigger logic (see
+   Q8), so the "swap the backing store" story is actually true, not aspirational.
+3. **A second, independently-discovered capability** (e.g. `docs.send_notice` or
+   `processor.file_chargeback` discovered live rather than hand-authored) to prove
+   discovery generalizes beyond the one flow it's been run against so far — discovery
+   has been exercised on `core.post_provisional_credit` only.
+4. **Finish M-03** (`REMEDIATION_STATUS.md`): a few evidence/procedure abstractions
+   from the original design are still only partially wired into the runtime.
+5. **A real Docker build/run**, verified end-to-end. The Dockerfile's layer ordering
+   was fixed and statically reviewed (H-12), but no Docker daemon was available in
+   this environment to run an actual `docker build`.
 
 ---
 
-## 4. Engineering Trade-offs & Production Roadmap
+## 5. Which Parts Were AI-Assisted
 
-### Q8: What trade-offs were made in this implementation, and what would you build next?
-**Answer**:
-1. **Synchronous Playwright vs Asyncio Fleet**:
-   - *Current*: Playwright Sync API inside `DeterministicExecutor` for predictable, linear procedural execution and simplified crash injection.
-   - *Production Roadmap*: Distributed task queues (Temporal.io or Celery) dispatching headless Playwright sessions across ephemeral worker nodes with distributed tracing (OpenTelemetry).
-2. **Simulated Hostile UIs vs Citrix/Canvas Terminals**:
-   - *Current*: Realistic HTML framesets, tables, and modals with client-side delays and failure switches.
-   - *Production Roadmap*: For green-screen 3270 terminals or Citrix virtual desktops where no DOM exists, integrate a Computer-Vision fallback surface utilizing localized OCR bounding boxes governed by the same `ScopedContainerGuard` contracts.
-3. **Secrets Management**:
-   - *Current*: Environment-based credential configuration.
-   - *Production Roadmap*: Just-in-Time ephemeral banking credentials fetched from HashiCorp Vault with hardware-token MFA emulation.
+Asked directly, the honest answer: **this project was built with extensive AI
+assistance** — using Claude Code throughout development, the independent audit
+remediation, the demo-scenario debugging, and this documentation pass itself. That
+includes writing the majority of the production code, the test suite, the audit
+remediation fixes, and these docs.
+
+What was *not* faked: the independent adversarial audit in `AUDIT_REPORT.md` found
+real, specific defects (a race condition allowing double-credit, a guard that could be
+bypassed by a hidden-field swap, an "append-only" ledger that was provably mutable,
+unauthenticated admin routes, and more) against an earlier version of this code, and
+`REMEDIATION_STATUS.md` tracks every fix with its own regression test and commit
+hash — nothing is marked fixed without a passing verification command. The 8 demo
+scenarios were run live, not just unit-tested, and several were found broken during
+that live run and fixed in the open (see the "Fix scripts/demo.py" commit).
+
+If asked in an interview: be upfront about the tooling. The engineering judgment —
+what to fix, what's actually a limitation vs. solved, what to prioritize next — is the
+part that should be defensible as your own regardless of which keystrokes typed the
+code.

@@ -120,10 +120,14 @@ To prevent split-brain conditions where human operators and automated agents att
 ## 7. Network Exposure & Admin/Operator Authentication
 
 Every simulator's failure-injection and reset routes (`/api/reset`, `/api/set_mode`,
-`/api/set_compliance_interstitial`, `/api/set_session_valid`, `/api/set_failure`) and
-the Tandem operator console's mutation routes (case lease claim/release, brokered
-browser-session actions) require a shared bearer token, and the launcher binds every
-service to loopback (`127.0.0.1`) by default:
+`/api/set_compliance_interstitial`, `/api/set_session_valid`, `/api/set_failure`,
+`/api/set_credit_lookup_failure`, `/api/set_post_commit_delay`), the actual
+money-moving commit routes (core_bank `/workspace/credit/confirm`,
+`/workspace/credit/commit`, `/workspace/credit/clear_compliance` on both Alpha and
+Beta; processor `/chargeback/file`; documents `/notices/send`), and the Tandem
+operator console's mutation routes (case lease claim/release, brokered
+browser-session actions) all require a shared bearer token, and the launcher binds
+every service to loopback (`127.0.0.1`) by default:
 
 - **Bind default**: `scripts/start_services.py` (and the `tandem` console script) bind
   to `TANDEM_HOST`, which defaults to `127.0.0.1`. The containerized deployment
@@ -134,11 +138,15 @@ service to loopback (`127.0.0.1`) by default:
   carry `Authorization: Bearer <TANDEM_ADMIN_TOKEN>`. The default value
   (`tandem-local-dev-admin-token-change-me`) is for local development only --
   **any shared or production-like deployment must override `TANDEM_ADMIN_TOKEN`.**
-- **CSRF defense on the operator console's HTML forms**: the lease claim/release
-  forms cannot set a custom header, so they carry the same token as a hidden
-  `admin_token` form field instead. A cross-origin page cannot read that token out of
-  the victim's same-origin dashboard page, so it cannot forge a valid submission
-  either -- this is the console's CSRF mitigation for those two routes.
+- **CSRF defense on browser-rendered forms**: the operator console's lease
+  claim/release forms, and every core_bank workspace form that leads to a commit
+  route, cannot set a custom header, so they carry the same token as a hidden
+  `admin_token` form field instead. A cross-origin page cannot read that token out
+  of the victim's same-origin page, so it cannot forge a valid submission either --
+  this is the CSRF mitigation for all of those routes.
+- **The HTTP-executed capability path** (processor and documents, which actuate via
+  one structural `HTTP_POST` step instead of a browser replay) sends the same token
+  as an `Authorization: Bearer` header from `tandem/replay/http_executor.py`.
 
 ---
 
