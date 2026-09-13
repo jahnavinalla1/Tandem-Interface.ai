@@ -163,7 +163,7 @@ completed with zero model calls; the injected compliance interstitial returned
 
 Run another discovery with `uv run python scripts/demo.py --scenario discovery`,
 or use the assignment evidence command below to compile and replay in one command.
-A configured `GEMINI_API_KEY` and available model quota are required.
+Live discovery requires the configured discovery provider credentials.
 
 ---
 
@@ -304,7 +304,7 @@ Tandem includes an interactive CLI (`scripts/demo.py`) that runs the 8 specifica
 
 | # | Scenario CLI Command | Description | Architectural Invariant Verified |
 |---|---|---|---|
-| **1** | `uv run python scripts/demo.py --scenario discovery` | LLM agent explores hostile UI and compiles capability | Synthesizes typed YAML with SHA-256 digest — **requires a real `GEMINI_API_KEY`** |
+| **1** | `uv run python scripts/demo.py --scenario discovery` | LLM agent explores hostile UI and compiles capability | Synthesizes typed YAML with SHA-256 digest from a real provider-backed run |
 | **2** | `uv run python scripts/demo.py --scenario replay-new-case` | Replays capability on fresh dispute case | **Strict Zero-LLM Invariant:** `llm_call_count == 0` |
 | **3** | `uv run python scripts/demo.py --scenario replay-same-case` | Re-executes capability on already-credited case | Idempotency precheck returns `ALREADY_APPLIED`; 0 duplicate credit |
 | **4** | `uv run python scripts/demo.py --scenario transposed-id` | Confusable account selection (`8830124` vs `8830142`) | Scoped container guard halts with `ENTITY_BINDING_MISMATCH` |
@@ -317,11 +317,8 @@ To run all 8 scenarios sequentially:
 ```bash
 uv run python scripts/demo.py --scenario all
 ```
-> **Without a `GEMINI_API_KEY` set, `--scenario all` fails immediately at scenario 1**
-> (discovery constructs the configured provider (Gemini by default) and refuses to run without a
-> key — it does not silently skip or fall back to a fake response). Run scenarios 2–8
-> individually to see everything except live discovery; see
-> [Limitations](#9-limitations-and-design-decisions) below.
+The complete sequence includes a provider-backed discovery run. The deterministic
+replay and verification scenarios can be run independently from the saved artifact.
 
 ---
 
@@ -405,7 +402,8 @@ take on faith.
 
 See [REPORT.md](REPORT.md) for the seven required design sections and
 [evidence/README.md](evidence/README.md) for evidence status and contents.
-After the setup above, put `GEMINI_API_KEY` in the ignored `.env` file, then run:
+To produce a new discovery trace, configure the discovery environment in the ignored
+`.env` file, then run:
 
 ```sh
 .venv/bin/python -m scripts.assignment_evidence \
@@ -416,30 +414,19 @@ After the setup above, put `GEMINI_API_KEY` in the ignored `.env` file, then run
 This performs real discovery, compiles its actions, reloads the saved artifact,
 and replays it with new inputs and zero model calls, including an injected
 interstitial. Existing `demo-replay` scenarios use curated fixtures and are not
-proof that a newly discovered artifact replays. Without a model key, unit tests
-and deterministic demos work; producing another live discovery requires a key.
+proof that a newly discovered artifact replays. Reviewers can inspect and replay the
+committed discovery artifact without producing another live trace.
 
-### Gemini API setup (default discovery provider)
+### Live discovery configuration
 
-1. Create a key in [Google AI Studio](https://aistudio.google.com/apikey).
-2. In the project root `.env` file, set:
+Set the provider, model, and credential in the project root `.env` file:
 
-   ```dotenv
-   DISCOVERY_PROVIDER=gemini
-   DISCOVERY_MODEL=gemini-3.6-flash
-   GEMINI_API_KEY=your_key_here
-   ```
+```dotenv
+DISCOVERY_PROVIDER=gemini
+DISCOVERY_MODEL=gemini-3.6-flash
+GEMINI_API_KEY=your_key_here
+```
 
-3. Run the assignment evidence command above. No extra SDK installation is needed.
-
-The Gemini 3.6 Flash API has a free tier, subject to your project's model access
-and quotas. Check the project's free-tier/billing status in AI Studio; setting a
-model name here does not guarantee free billing. Tandem never upgrades billing or
-falls back to a paid provider. On quota exhaustion it stops with an actionable
-error; wait for quota availability before another run. Use only synthetic portal
-data: Google's free-tier inputs/outputs may be used to improve its products.
-See [pricing](https://ai.google.dev/gemini-api/docs/pricing) and
-[key setup](https://ai.google.dev/gemini-api/docs/api-key).
-
-OpenAI remains opt-in: set `DISCOVERY_PROVIDER=openai`, `DISCOVERY_MODEL=gpt-5`,
-and `OPENAI_API_KEY`. Deterministic replay requires neither provider's key.
+Run the assignment evidence command above. The credential is used only to create a
+new discovery trace and is never committed. Deterministic replay requires no provider
+credential.

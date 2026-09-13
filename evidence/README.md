@@ -5,9 +5,8 @@ It contains a genuine Gemini 3.6 Flash discovery, the compiled artifact, success
 new-case replay and an injected-interstitial replay. Both replays used zero model
 calls. See [RUN_STATUS.md](RUN_STATUS.md) for verified results and earlier attempts.
 
-To produce another bundle:
-
-From the repository root, configure `GEMINI_API_KEY` in the ignored `.env` file and run:
+To produce another bundle, configure the discovery provider credentials in the
+ignored `.env` file and run from the repository root:
 
 ```sh
 .venv/bin/python -m scripts.assignment_evidence \
@@ -27,5 +26,6 @@ loads that exact saved YAML, uses a new case ID, and verifies zero model calls.
 A manifest is written only after the expected outcomes pass. Failed runs retain
 partial evidence; do not describe them as successful submissions.
 
-Review generated files before making them public. Screenshots and free-text page
-observations are not PII-redacted; use only the local synthetic simulator.
+Review generated files before making them public. The recorder masks configured
+secrets and common sensitive-data patterns, but the simulator should still contain
+only synthetic records.

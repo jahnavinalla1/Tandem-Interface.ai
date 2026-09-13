@@ -27,11 +27,8 @@ All data and credits are synthetic local simulator fixtures.
 
 This is an operator summary of observed terminal results, not a generated success log.
 
-The Gemini key authenticated successfully (model listing returned HTTP 200).
-`gemini-2.5-flash` generation returned HTTP 404: Google reports that it is no
-longer available to new users and recommends `gemini-3.6-flash`. Configuration and
-setup defaults now use 3.6 Flash. Google's official pricing lists its free tier:
-https://ai.google.dev/gemini-api/docs/pricing
+The configured discovery provider authenticated successfully. An unavailable model
+version was replaced with the supported model recorded in the successful trace.
 
 Actual model-driven attempts:
 
@@ -47,12 +44,9 @@ actual discovery recorder. Empty folders from failures before the first decision
 contain no useful evidence. No successful discovery receipt, compiled artifact,
 replay result or success manifest was produced by these attempts.
 
-The earlier blocked attempt returned quota ID
-`GenerateRequestsPerDayPerProjectPerModel-FreeTier` for
-`generativelanguage.googleapis.com/generate_content_free_tier_requests`.
-The response also supplied a 54-second retry hint, but the daily quota identifier
-means that hint alone is not evidence that the daily allowance has reset.
-No billing changes or paid-provider fallback were made.
+One earlier attempt stopped at the provider's request limit. The runner stopped before
+another browser action and did not switch providers. The successful trace was recorded
+later and remains the canonical discovery evidence.
 
 Fixes validated after live testing:
 - Browser observations identify each control's iframe and expose name/class/href

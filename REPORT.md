@@ -111,9 +111,8 @@ redacted, along with common email, SSN and card-number patterns. Screenshots mas
 password/email/card fields, marked sensitive regions and matching text elements.
 This is defense in depth, not a claim that regexes detect all PII. Real institutional
 deployments need application-specific region inventories, data classification and
-retention policies. This submission uses only synthetic fixtures. Gemini free-tier
-data may be used by Google to improve its products; no real credentials or customers
-should be placed in the simulator. `.env` stays outside Git.
+retention policies. This submission uses only synthetic fixtures; no real customer
+records should be placed in the simulator. `.env` stays outside Git.
 
 ## Cuts
 
