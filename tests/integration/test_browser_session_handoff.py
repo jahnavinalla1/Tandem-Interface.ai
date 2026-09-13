@@ -85,7 +85,8 @@ def test_operator_action_preserves_worker_owned_context_and_cookie(tmp_path: Pat
             )
 
         assert action(automation_id, automation_token, "FILL", "input[name='q']", value="8830142").status_code == 200
-        assert action(automation_id, automation_token, "CLICK", "button[type='submit']").status_code == 200
+        search = action(automation_id, automation_token, "CLICK", "button[type='submit']")
+        assert search.status_code == 200, search.text
         open_credit = action(automation_id, automation_token, "CLICK", "a.action-credit-btn")
         assert open_credit.status_code == 200, open_credit.text
         before_thread = open_credit.json()["worker_thread_id"]

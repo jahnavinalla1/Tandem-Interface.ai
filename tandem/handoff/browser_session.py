@@ -117,11 +117,16 @@ class BrowserSessionWorker:
                 str(params["selector"])
             ).first
             control.wait_for(state="visible", timeout=5000)
+            # A form inside an iframe navigates that frame, not the top-level
+            # page. The parent's previous networkidle state can already be set.
+            # Wait on the actual action frame before collecting masked evidence.
+            element = control.element_handle(timeout=5000)
+            action_frame = element.owner_frame() if element is not None else None
             control.click(timeout=5000)
-            try:
+            if action_frame is not None:
+                action_frame.wait_for_load_state("networkidle", timeout=5000)
+            else:
                 page.wait_for_load_state("networkidle", timeout=5000)
-            except Exception:
-                pass
         elif action == "SET_COOKIE":
             browser_context.add_cookies(
                 [
