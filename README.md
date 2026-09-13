@@ -151,11 +151,19 @@ real, running instance of the hostile core banking simulator, for up to 20 cycle
   refuses to compile if the trace's recorded actions don't match its own durable
   decision events — it can't silently drift from what actually happened. The result
   is canonicalized, SHA-256 hashed, and written to `capabilities/compiled/<id>.yaml`.
-  A real example from an actual run is checked in at
-  [`capabilities/compiled/demo_post_provisional_credit.yaml`](capabilities/compiled/demo_post_provisional_credit.yaml).
+  A schema-valid, hash-verified example in this shape is checked in at
+  [`capabilities/compiled/demo_post_provisional_credit.yaml`](capabilities/compiled/demo_post_provisional_credit.yaml)
+  — **but be precise about what that file is**: it has `source_discovery_run_id: null`
+  and an exact-midnight placeholder `created_at`, meaning it was hand-authored to match
+  the compiler's output shape, not produced by an actual discovery run. There is no
+  `evidence/discovery/` directory in this repo. No live discovery run has actually
+  happened here; see [Limitations](#9-limitations-and-design-decisions).
 
 Run it yourself with `uv run python scripts/demo.py --scenario discovery` — **this one
-scenario requires a real `OPENAI_API_KEY`** (see [Limitations](#9-limitations-and-design-decisions) below).
+scenario requires a real `OPENAI_API_KEY`**, which was not available while preparing
+this submission, so this is the one piece of the pipeline that is built and unit-tested
+against a real API contract (see `tests/regression/test_provider_discovery.py`) but has
+never actually been run live end-to-end.
 
 ---
 
@@ -323,22 +331,24 @@ uv run python scripts/demo.py --scenario all
 Rather than presenting this as finished, here's what's actually true about its current
 state — some by deliberate scope choice, some as known gaps.
 
-**Discovery has only been exercised on one capability.** `DiscoveryAgent` has been run
-against `core.post_provisional_credit` — a single flow, in one hostile UI. The
-observe/decide/act loop and the compiler are general-purpose, but "discovery
-generalizes to arbitrary tasks" hasn't been proven by actually running it against a
-second, different flow. That's the top item on my own follow-up list (see
-[docs/interviewer-questions.md](docs/interviewer-questions.md), §4).
-
-**No live `OPENAI_API_KEY` was available while preparing this submission**, so the
-discovery scenario's *code path* is verified (real HTTP client, real structured-output
-schema, real Pydantic validation of the model's decisions, a mocked-provider
-regression test exercising the exact same flow in
-`tests/regression/test_provider_discovery.py`), but a genuine live model call has not
-been run and recorded as part of this delivery. Everything downstream of discovery —
-the compiled artifact, deterministic replay, the zero-LLM invariant — has been
-verified for real, repeatedly, including against a completely fresh clone of this
-repository.
+**No live discovery run has actually happened in this project.** `DiscoveryAgent` and
+`OpenAIResponsesProvider` are real, working code — a real HTTP client hitting the
+OpenAI Responses API, a real structured-output schema, real Pydantic validation of
+every decision before it reaches the browser — and `tests/regression/test_provider_discovery.py`
+proves that exact request/response contract is wired correctly, with the network
+transport intercepted by a mock instead of a genuine model call. But no
+`OPENAI_API_KEY` was available while preparing this submission, so an actual LLM has
+never run this discovery loop end-to-end. The one compiled capability checked into
+this repo (`capabilities/compiled/demo_post_provisional_credit.yaml`) was **not**
+produced by a real run either — its `source_discovery_run_id: null` and placeholder
+`created_at` give it away, and there's no `evidence/discovery/` directory anywhere in
+the repo, which is where a genuine run's screenshots and decision trace would live.
+It's a hand-authored, schema-valid stand-in, not evidence of the LLM having actually
+done this. **Everything downstream of discovery is different**: deterministic replay
+of that same artifact — the part that must run with 0 LLM calls — has been verified
+for real, repeatedly, including live against a completely fresh clone of this
+repository. The unproven claim is specifically "an LLM figured this out"; the proven
+claim is "a saved capability, however it was produced, replays deterministically."
 
 **The SQLite ledger is not a "swap one config string for Postgres" story.** The
 append-only enforcement that closes the audit's H-09 finding is implemented as

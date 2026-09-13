@@ -92,8 +92,14 @@ runs a bounded observe → decide → act loop, up to `max_cycles` (default 20):
    at all (`compiler.py:53`) — it can't silently drift from what really happened.
    The result is canonicalized, hashed (SHA-256), and written to
    `capabilities/compiled/<capability_id>.yaml` with the hash in both a header comment
-   and a schema field. A checked-in example from a real run is at
-   `capabilities/compiled/demo_post_provisional_credit.yaml`.
+   and a schema field. **Be careful citing the checked-in example** at
+   `capabilities/compiled/demo_post_provisional_credit.yaml` as proof this happened —
+   it isn't. It has `source_discovery_run_id: null` and a placeholder `created_at`
+   (exact midnight), and there's no `evidence/discovery/` directory in the repo where a
+   real run's trace/screenshots would live. It's a hand-authored, schema- and
+   hash-valid example in the compiler's output shape, not the product of an actual
+   discovery run. If asked directly, say so — don't let a plausible-looking artifact
+   stand in for a claim you can't back up. See §3 (Q5) and §5 below.
 
 ### Q5: How do you actually know the model isn't being called during replay?
 **Answer:** Three independent layers, not just a docstring claim:
@@ -188,17 +194,21 @@ one of the first things I'd finish.
 ## 4. What I'd Improve With Another Week
 
 In priority order:
-1. **Wire `operator_clear_compliance` through the HTTP browser-session action API**
+1. **Actually run discovery live, once, with a real API key**, and let the compiler
+   produce a genuine artifact from that run — replacing the hand-authored
+   `demo_post_provisional_credit.yaml`, which is schema-valid but was never produced
+   by an LLM (see §2 Q4 and the correction there). This is the single biggest gap
+   between what's built and what's been *demonstrated*, and it's first for a reason.
+2. **A second, independently-discovered capability** (e.g. `docs.send_notice` or
+   `processor.file_chargeback`) to prove discovery generalizes beyond one flow, once
+   (1) is done at all.
+3. **Wire `operator_clear_compliance` through the HTTP browser-session action API**
    (see Q9) instead of only being callable in-process.
-2. **A real Postgres-compatible ledger path** for the append-only trigger logic (see
+4. **A real Postgres-compatible ledger path** for the append-only trigger logic (see
    Q8), so the "swap the backing store" story is actually true, not aspirational.
-3. **A second, independently-discovered capability** (e.g. `docs.send_notice` or
-   `processor.file_chargeback` discovered live rather than hand-authored) to prove
-   discovery generalizes beyond the one flow it's been run against so far — discovery
-   has been exercised on `core.post_provisional_credit` only.
-4. **Finish M-03** (`REMEDIATION_STATUS.md`): a few evidence/procedure abstractions
+5. **Finish M-03** (`REMEDIATION_STATUS.md`): a few evidence/procedure abstractions
    from the original design are still only partially wired into the runtime.
-5. **A real Docker build/run**, verified end-to-end. The Dockerfile's layer ordering
+6. **A real Docker build/run**, verified end-to-end. The Dockerfile's layer ordering
    was fixed and statically reviewed (H-12), but no Docker daemon was available in
    this environment to run an actual `docker build`.
 
