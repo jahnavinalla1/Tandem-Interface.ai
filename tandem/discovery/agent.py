@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urlsplit
 
 from playwright.sync_api import Page
@@ -19,7 +19,14 @@ from tandem.discovery.provider import (
     DiscoveryProvider,
 )
 from tandem.discovery.recorder import ActionTrace, DiscoveryTrace, TraceRecorder, redact_secrets
+from tandem.domain.capability import load_capability_from_yaml
+from tandem.domain.errors import PolicyViolationError
 from tandem.domain.money import parse_money
+from tandem.policy.browser import authorize_control, authorize_url, install_navigation_policy
+from tandem.policy.rules import validate_policy
+from tandem.replay.guards import verify_control_scoped_guard
+from tandem.security.evidence import sanitize, screenshot
+from tandem.surfaces.playwright_surface import PlaywrightSurface
 
 
 class DiscoveryAgent:
@@ -31,11 +38,13 @@ class DiscoveryAgent:
         provider: DiscoveryProvider | None = None,
         evidence_root: str | Path = "evidence/discovery",
         max_cycles: int = 20,
+        intervention_handler: Callable[[Page, dict[str, Any]], bool] | None = None,
     ) -> None:
         self.page = page
         self.provider = provider or create_discovery_provider(settings)
         self.evidence_root = Path(evidence_root)
         self.max_cycles = max_cycles
+        self.intervention_handler = intervention_handler
 
     def discover_provisional_credit(
         self,
@@ -64,7 +73,11 @@ class DiscoveryAgent:
             raise ValueError("Discovery requires a non-empty goal and target")
         if self._origin(target) != self._origin(settings.core_bank_url):
             raise ValueError("Discovery target must be the configured core bank simulator")
+        if self.page is not None:
+            install_navigation_policy(self.page.context)
         typed_inputs = self._typed_inputs(inputs)
+        policy_cap = load_capability_from_yaml("capabilities/core/post_provisional_credit.yaml")
+        validate_policy(policy_cap, typed_inputs)
         url = target
         objective = goal
         recorder = TraceRecorder(
@@ -78,7 +91,7 @@ class DiscoveryAgent:
 
         finished = False
         for _ in range(self.max_cycles):
-            observation = self._observe()
+            observation = BrowserObservation.model_validate(sanitize(self._observe().model_dump()))
             context = DiscoveryContext(
                 objective=objective,
                 inputs=redact_secrets(typed_inputs),
@@ -93,7 +106,12 @@ class DiscoveryAgent:
                 ],
                 allowed_surfaces=[url],
             )
-            decision = self.provider.decide(context)
+            try:
+                decision = self.provider.decide(context)
+            except Exception as exc:
+                if self._request_intervention(recorder, type(exc).__name__, observation):
+                    continue
+                raise
             try:
                 action, result = self._execute_decision(
                     decision=decision,
@@ -107,6 +125,11 @@ class DiscoveryAgent:
                     result={"status": "failed", "error_type": type(exc).__name__},
                     screenshot=self._safe_screenshot(),
                 )
+                if self._request_intervention(
+                    recorder, type(exc).__name__, observation,
+                    can_resume=decision.action != DiscoveryAction.SUBMIT
+                ):
+                    continue
                 raise
             screenshot = self._safe_screenshot()
             recorder.record_cycle(
@@ -123,6 +146,7 @@ class DiscoveryAgent:
                 break
 
         if not finished:
+            self._request_intervention(recorder, "MAX_CYCLES", self._observe(), can_resume=False)
             raise RuntimeError(f"Discovery provider did not finish within {self.max_cycles} cycles")
 
         memo, money_moved = self._read_receipt()
@@ -137,6 +161,16 @@ class DiscoveryAgent:
                 "final_receipt_reference": memo,
             },
         )
+
+    def _request_intervention(self, recorder, reason, observation, *, can_resume=True) -> bool:
+        request = {"run_id": recorder.run_id, "goal": recorder.goal,
+                   "reason": reason, "cycle": len(recorder.events),
+                   "state": observation.model_dump(mode="json"),
+                   "status": "NEEDS_HUMAN", "can_resume": can_resume}
+        if recorder.evidence_directory:
+            (recorder.evidence_directory / "intervention.json").write_text(
+                json.dumps(redact_secrets(request), indent=2))
+        return bool(can_resume and self.intervention_handler and self.intervention_handler(self.page, request))
 
     @staticmethod
     def _typed_inputs(inputs: dict[str, Any]) -> dict[str, str]:
@@ -162,6 +196,7 @@ class DiscoveryAgent:
         body_parts: list[str] = []
         interactive: list[str] = []
         frame_summaries: list[str] = []
+        accessibility_trees: list[dict[str, Any]] = []
         for frame in self.page.frames:
             try:
                 frame_selector = None
@@ -173,6 +208,10 @@ class DiscoveryAgent:
                         frame_selector = f"iframe[id={json.dumps(frame_id)}]"
                     elif frame_name:
                         frame_selector = f"iframe[name={json.dumps(frame_name)}]"
+                accessibility_trees.append({
+                    "frame_selector": frame_selector,
+                    "tree": frame.locator("body").aria_snapshot(timeout=1000),
+                })
                 frame_text = frame.locator("body").inner_text(timeout=1000)[:6000]
                 if frame_text:
                     body_parts.append(f"frame_selector={frame_selector}:\n{frame_text}")
@@ -207,6 +246,7 @@ class DiscoveryAgent:
             body_text="\n".join(body_parts)[:12000],
             interactive_elements=interactive,
             frame_summaries=frame_summaries,
+            accessibility_trees=accessibility_trees,
         )
 
     def _execute_decision(
@@ -227,6 +267,7 @@ class DiscoveryAgent:
             target_url = decision.target_url or ""
             if self._origin(target_url) != self._origin(portal_url):
                 raise ValueError("Discovery provider requested navigation outside allowed origin")
+            authorize_url(target_url)
             self.page.goto(target_url, wait_until="networkidle")
             action = recorder.record_navigate(
                 target_url,
@@ -242,7 +283,21 @@ class DiscoveryAgent:
             if decision.frame_selector
             else self.page
         )
-        locator = context.locator(selector).first
+        matches = context.locator(selector)
+        if matches.count() != 1:
+            raise PolicyViolationError("Discovery control is missing or ambiguous")
+        locator = matches.first
+        authorize_control(locator, decision.action.value)
+        if decision.action == DiscoveryAction.SUBMIT:
+            policy_cap = load_capability_from_yaml("capabilities/core/post_provisional_credit.yaml")
+            validate_policy(policy_cap, inputs)
+            assert policy_cap.scoped_guard is not None
+            policy_cap.scoped_guard = policy_cap.scoped_guard.model_copy(
+                update={"container_selector": decision.container_selector}
+            )
+            verify_control_scoped_guard(policy_cap, inputs, PlaywrightSurface(self.page),
+                                       frame_selector=decision.frame_selector,
+                                       control_candidates=[selector])
         if decision.action == DiscoveryAction.FILL:
             input_name = decision.input_name or ""
             if input_name not in inputs:
@@ -300,7 +355,7 @@ class DiscoveryAgent:
 
     def _safe_screenshot(self) -> bytes | None:
         try:
-            return self.page.screenshot(full_page=True)
+            return screenshot(self.page)
         except Exception:
             return None
 

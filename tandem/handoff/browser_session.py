@@ -11,6 +11,8 @@ from uuid import uuid4
 
 from playwright.sync_api import Browser, BrowserContext, Page, sync_playwright
 
+from tandem.security.evidence import sanitize, screenshot
+
 
 @dataclass
 class _Command:
@@ -136,7 +138,7 @@ class BrowserSessionWorker:
 
     def _snapshot(self, browser_context: BrowserContext, page: Page) -> dict[str, Any]:
         screenshot_path = self.evidence_dir / "latest.png"
-        page.screenshot(path=str(screenshot_path), full_page=True)
+        screenshot_path.write_bytes(screenshot(page))
         controls: list[dict[str, Any]] = []
         for frame in page.frames:
             try:
@@ -161,7 +163,7 @@ class BrowserSessionWorker:
             "status": "ACTIVE",
             "url": page.url,
             "title": page.title(),
-            "controls": controls,
+            "controls": sanitize(controls),
             "cookie_names": [cookie["name"] for cookie in cookies],
             "cookies": {cookie["name"]: cookie["value"] for cookie in cookies},
             "screenshot_path": str(screenshot_path.resolve()),

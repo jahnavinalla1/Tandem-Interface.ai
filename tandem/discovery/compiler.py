@@ -161,10 +161,12 @@ class CapabilityCompiler:
             output_schema={
                 "type": "object",
                 "properties": {
-                    "receipt_reference": {"type": "string"},
-                    "money_moved": {"type": "boolean"},
+                    "receipt_reference": {"type": "string", "x-selector": "#receipt_memo_code, .result-memo-code"},
+                    "money_moved": {"type": "boolean", "x-selector": "#receipt_money_moved", "x-equals": "MONEY_MOVED=TRUE"},
                 },
                 "required": ["receipt_reference", "money_moved"],
+                "x-business-outcomes": ["MEMBER_NOT_FOUND", "ALREADY_APPLIED", "POLICY_DENIED"],
+                "x-interventions": ["COMPLIANCE_INTERSTITIAL", "POSTCHECK_UNCERTAIN"],
             },
             scoped_guard=scoped_guard,
             steps=steps,

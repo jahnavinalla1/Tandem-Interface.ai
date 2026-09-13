@@ -337,10 +337,18 @@ zero-model replay results. The compiled demo artifact is generated from this run
 other curated capabilities remain fixtures. Earlier failed attempts are retained
 in [evidence/RUN_STATUS.md](evidence/RUN_STATUS.md).
 
-The exceptional replay proves detection and escalation of a compliance interstitial;
-it does not itself prove manual takeover/resume. Other limitations, including
-simulator inquiry APIs and incomplete discovery guard parity, remain documented
-in [REPORT.md](REPORT.md).
+Run `make verify-assignment` for the keyless assignment demonstration. It checks
+successful replay, duplicate prevention, policy denial, intervention, and same-page
+handoff/resume using real lease transfers and a clearly labelled scripted operator.
+Use `uv run python -m scripts.verify_assignment --manual-handoff` to operate the
+headed browser yourself. Both paths use browser UI inquiries for replay checks.
+The live discovery runner accepts `--manual-handoff` too.
+
+Discovery and replay share destination and control admission checks, and discovery
+checks the bound form before submitting. Evidence masks common sensitive fields.
+Native desktop support and a general-purpose task compiler remain design proposals;
+see [REPORT.md](REPORT.md) for the exact boundaries. Older effect-engine demos still
+use simulator inquiry APIs; the assignment verification path does not.
 
 **The SQLite ledger is not a "swap one config string for Postgres" story.** The
 append-only enforcement that closes the audit's H-09 finding is implemented as

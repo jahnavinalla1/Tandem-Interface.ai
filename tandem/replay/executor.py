@@ -13,9 +13,12 @@ from tandem.domain.errors import (
     EntityBindingMismatchError,
     LeaseConflictError,
     PageDriftError,
+    PolicyViolationError,
     SessionExpiredError,
 )
 from tandem.domain.outcomes import ExecutionOutcome, ExecutionPhase, OutcomeCategory, OutcomeCode
+from tandem.policy.browser import authorize_control, authorize_url, install_navigation_policy
+from tandem.policy.engine import PolicyEngine
 from tandem.policy.telemetry import llm_tracker
 from tandem.replay.crash_injection import maybe_crash
 from tandem.replay.guards import verify_control_scoped_guard
@@ -36,7 +39,8 @@ def render_template(template_str: str, context: Dict[str, Any]) -> str:
 class DeterministicExecutor:
     """Executes a compiled capability artifact deterministically using Playwright with 0 LLM calls."""
 
-    def __init__(self, page: Page, overlay: Optional[SurfaceOverlay] = None):
+    def __init__(self, page: Page, overlay: Optional[SurfaceOverlay] = None, *, ui_checks: bool = False):
+        self.ui_checks = ui_checks
         self.page = page
         self.surface = PlaywrightSurface(page)
         self.overlay = overlay
@@ -47,6 +51,7 @@ class DeterministicExecutor:
         # Baseline LLM count check
         llm_count_before = llm_tracker.call_count
 
+        self.current_step = None
         context = {"input": inputs}
         frame_selector = "#core_workspace_frame"  # Standard hostile frame if applicable
         execution_phase = ExecutionPhase.BEFORE_SUBMIT
@@ -57,15 +62,39 @@ class DeterministicExecutor:
             maybe_crash("F_BEFORE_SUBMIT", capability.id)
 
         try:
+            supported = {StepAction.NAVIGATE, StepAction.FILL, StepAction.CLICK,
+                         StepAction.SUBMIT, StepAction.ASSERT_CONTAINER}
+            unsupported = [step for step in capability.steps if step.action not in supported]
+            if unsupported:
+                raise PolicyViolationError(
+                    f"Unsupported browser action {unsupported[0].action.value} at {unsupported[0].step_id}"
+                )
+            if capability.system == "core_bank":
+                install_navigation_policy(self.page.context)
+            denied = PolicyEngine.evaluate(capability, inputs)
+            if denied:
+                return denied
+            if self.ui_checks and capability.effect.effect_class == EffectClass.COMMIT:
+                from tandem.replay.ui_inquiry import inquire_credit
+                admission = inquire_credit(self.page, inputs, before=True)
+                if admission.code != OutcomeCode.NOT_APPLIED:
+                    return admission
             # Check for session expiration early if page loaded
             if "SESSION EXPIRED" in self.page.content():
                 raise SessionExpiredError("Target system session has timed out")
 
             for step in capability.steps:
+                self.current_step = step.step_id
                 if self.lease_validator is not None and not self.lease_validator():
                     raise LeaseConflictError(
                         "Browser action rejected because the ownership fencing token is stale"
                     )
+                for frame in self.page.frames:
+                    if "No records found matching search criteria." in frame.locator("body").inner_text(timeout=1000):
+                        return ExecutionOutcome(category=OutcomeCategory.BUSINESS_OUTCOME,
+                                                code=OutcomeCode.MEMBER_NOT_FOUND,
+                                                message="Member search returned no matching record",
+                                                details={"member_id": inputs.get("member_id")})
                 # Check for compliance review interstitial
                 try:
                     ctx = self.surface._get_context(frame_selector)
@@ -80,6 +109,12 @@ class DeterministicExecutor:
                     raise
                 except Exception:
                     pass
+
+                if capability.system == "core_bank" and step.action in {StepAction.FILL, StepAction.CLICK, StepAction.SUBMIT}:
+                    ctx = self.surface._get_context(step.frame_selector or frame_selector)
+                    candidates = self.overlay.get_candidates(step.semantic_target, step.locator_candidates) if self.overlay else step.locator_candidates
+                    control, _ = self.surface._find_best_locator(ctx, candidates, step.semantic_target)
+                    authorize_control(control, step.action.value)
 
                 # 1. Container-scoped guard check immediately prior to or during commit actions
                 if step.action in {StepAction.ASSERT_CONTAINER, StepAction.SUBMIT}:
@@ -113,6 +148,8 @@ class DeterministicExecutor:
                                 f"No runtime route configured for surface '{capability.system}'"
                             )
                         url = routes[capability.system]
+                    if capability.system == "core_bank":
+                        authorize_url(url)
                     self.surface.navigate(url)
 
                 elif step.action == StepAction.FILL:
@@ -176,7 +213,11 @@ class DeterministicExecutor:
                 from tandem.replay.postcheck import execute_postcheck
 
                 maybe_crash("H_BEFORE_POSTCHECK", capability.id)
-                postcheck = execute_postcheck(capability, inputs)
+                if self.ui_checks:
+                    from tandem.replay.ui_inquiry import inquire_credit
+                    postcheck = inquire_credit(self.page, inputs, before=False)
+                else:
+                    postcheck = execute_postcheck(capability, inputs)
                 maybe_crash("I_AFTER_POSTCHECK", capability.id)
                 if not postcheck.is_success:
                     return postcheck.model_copy(
@@ -185,9 +226,18 @@ class DeterministicExecutor:
                 memo_code = postcheck.audit_ref
                 money_moved = postcheck.money_moved
 
+            outputs = {"receipt_reference": memo_code, "money_moved": money_moved}
+            for name, spec in capability.output_schema.get("properties", {}).items():
+                if "x-selector" in spec:
+                    text = context_el.locator(spec["x-selector"]).inner_text().strip()
+                    outputs[name] = (text == spec["x-equals"]) if "x-equals" in spec else text
+            for required in capability.output_schema.get("required", []):
+                if required not in outputs or outputs[required] is None:
+                    raise ValueError(f"Required output missing: {required}")
             return ExecutionOutcome(
                 category=OutcomeCategory.SUCCESS,
                 code=OutcomeCode.COMPLETED,
+                outputs=outputs,
                 message=f"Capability '{capability.id}' replayed successfully with 0 LLM calls",
                 details={
                     "memo_code": memo_code,
@@ -199,11 +249,23 @@ class DeterministicExecutor:
                 execution_phase=execution_phase,
             )
 
+        except PolicyViolationError as e:
+            return ExecutionOutcome(
+                category=OutcomeCategory.HARD_FAILURE, code=OutcomeCode.POLICY_VIOLATION,
+                message=str(e),
+                failed_step=self.current_step,
+                expected="Unique allowlisted control and matching declared inputs",
+                observed=str(e), execution_phase=execution_phase,
+            )
+
         except EntityBindingMismatchError as e:
             return ExecutionOutcome(
                 category=OutcomeCategory.HARD_FAILURE,
                 code=OutcomeCode.ENTITY_BINDING_MISMATCH,
                 message=str(e),
+                failed_step=self.current_step,
+                expected="Unique allowlisted control and matching declared inputs",
+                observed=str(e),
                 details={"inputs": inputs},
                 money_moved=False,
                 execution_phase=execution_phase,
@@ -214,6 +276,9 @@ class DeterministicExecutor:
                 category=OutcomeCategory.HARD_FAILURE,
                 code=OutcomeCode.AMOUNT_MISMATCH,
                 message=str(e),
+                failed_step=self.current_step,
+                expected="Unique allowlisted control and matching declared inputs",
+                observed=str(e),
                 details={"inputs": inputs},
                 money_moved=False,
                 execution_phase=execution_phase,
@@ -224,6 +289,9 @@ class DeterministicExecutor:
                 category=OutcomeCategory.RECOVERABLE_FAILURE,
                 code=OutcomeCode.PAGE_DRIFT,
                 message=str(e),
+                failed_step=self.current_step,
+                expected="Unique allowlisted control and matching declared inputs",
+                observed=str(e),
                 details={"drift_events": self.surface.drift_events},
                 money_moved=False,
                 execution_phase=execution_phase,
@@ -234,6 +302,9 @@ class DeterministicExecutor:
                 category=OutcomeCategory.NEEDS_HUMAN,
                 code=OutcomeCode.COMPLIANCE_INTERSTITIAL,
                 message=str(e),
+                failed_step=self.current_step,
+                expected="Unique allowlisted control and matching declared inputs",
+                observed=str(e),
                 details={"interstitial_type": "REG_E_COMPLIANCE_REVIEW"},
                 money_moved=False,
                 execution_phase=execution_phase,
@@ -244,6 +315,9 @@ class DeterministicExecutor:
                 category=OutcomeCategory.RECOVERABLE_FAILURE,
                 code=OutcomeCode.SESSION_EXPIRED,
                 message=str(e),
+                failed_step=self.current_step,
+                expected="Unique allowlisted control and matching declared inputs",
+                observed=str(e),
                 money_moved=False,
                 execution_phase=execution_phase,
             )
@@ -253,6 +327,9 @@ class DeterministicExecutor:
                 category=OutcomeCategory.NEEDS_HUMAN,
                 code=OutcomeCode.LEASE_FENCED,
                 message=str(e),
+                failed_step=self.current_step,
+                expected="Unique allowlisted control and matching declared inputs",
+                observed=str(e),
                 money_moved=False,
                 execution_phase=execution_phase,
             )

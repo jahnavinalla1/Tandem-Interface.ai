@@ -31,6 +31,7 @@ class BrowserObservation(BaseModel):
     body_text: str = ""
     interactive_elements: list[str] = Field(default_factory=list)
     frame_summaries: list[str] = Field(default_factory=list)
+    accessibility_trees: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class DiscoveryDecision(BaseModel):

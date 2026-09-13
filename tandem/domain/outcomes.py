@@ -38,6 +38,7 @@ class OutcomeCode(str, Enum):
     CONFIRMED_NOT_APPLIED = "CONFIRMED_NOT_APPLIED"
 
     # BUSINESS_OUTCOME
+    MEMBER_NOT_FOUND = "MEMBER_NOT_FOUND"
     ALREADY_APPLIED = "ALREADY_APPLIED"
     ALREADY_CLAIMED = "ALREADY_CLAIMED"
     DUPLICATE_DISPUTE = "DUPLICATE_DISPUTE"
@@ -84,6 +85,11 @@ class ExecutionOutcome(BaseModel):
     money_moved: bool = False
     audit_ref: Optional[str] = None
     execution_phase: ExecutionPhase = ExecutionPhase.BEFORE_SUBMIT
+    outputs: Dict[str, Any] = Field(default_factory=dict)
+    failed_step: Optional[str] = None
+    expected: Optional[str] = None
+    observed: Optional[str] = None
+    evidence: Optional[str] = None
 
     @property
     def is_success(self) -> bool:
@@ -100,4 +106,4 @@ class ExecutionOutcome(BaseModel):
 
     @property
     def requires_human(self) -> bool:
-        return self.category in (OutcomeCategory.HARD_FAILURE, OutcomeCategory.UNCERTAIN_EFFECT)
+        return self.category in (OutcomeCategory.NEEDS_HUMAN, OutcomeCategory.HARD_FAILURE, OutcomeCategory.UNCERTAIN_EFFECT)

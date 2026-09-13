@@ -16,12 +16,14 @@ from tandem.domain.capability import load_capability_from_yaml
 from tandem.domain.outcomes import OutcomeCode
 from tandem.policy.telemetry import llm_tracker
 from tandem.replay.executor import DeterministicExecutor
+from tandem.security.evidence import screenshot
 from tandem.support.simulator_control import ensure_simulators_running, set_core_bank_mode
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--goal', required=True)
+    parser.add_argument('--manual-handoff', action='store_true')
     parser.add_argument('--target', default=settings.core_bank_url)
     parser.add_argument('--output', type=Path, default=Path('evidence'))
     args = parser.parse_args()
@@ -39,10 +41,13 @@ def main() -> None:
     ensure_simulators_running()
     llm_tracker.reset()
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
+        browser = playwright.chromium.launch(headless=not args.manual_handoff)
         try:
-            page = browser.new_page()
-            trace = DiscoveryAgent(page, provider=provider, evidence_root=run_dir / 'discovery').discover(
+            page = browser.new_context().new_page()
+            from tandem.handoff.console import ConsoleHandoff
+            handler = ConsoleHandoff(run_dir / 'operator') if args.manual_handoff else None
+            trace = DiscoveryAgent(page, provider=provider, evidence_root=run_dir / 'discovery',
+                                   intervention_handler=handler).discover(
                 args.goal, args.target, inputs,
             )
             discovery_calls = llm_tracker.call_count
@@ -54,12 +59,12 @@ def main() -> None:
             for scenario in ('replay', 'replay-interstitial'):
                 inputs['case_id'] = f'D-REPLAY-{uuid4().hex[:12]}'
                 llm_tracker.reset()
-                page = browser.new_page()
+                page = browser.new_context().new_page()
                 try:
                     if scenario == 'replay-interstitial':
                         set_core_bank_mode(require_compliance_interstitial=True)
-                    outcome = DeterministicExecutor(page).execute(cap, inputs)
-                    page.screenshot(path=str(run_dir / f'{scenario}.png'), full_page=True)
+                    outcome = DeterministicExecutor(page, ui_checks=True).execute(cap, inputs)
+                    (run_dir / f'{scenario}.png').write_bytes(screenshot(page))
                     record = dict(scenario=scenario, artifact_hash=cap.artifact_hash,
                                   source_discovery_run_id=cap.source_discovery_run_id,
                                   inputs=inputs.copy(), llm_calls=llm_tracker.call_count,

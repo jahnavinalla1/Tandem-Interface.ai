@@ -63,6 +63,22 @@ Fixes validated after live testing:
   action executes until a complete validated decision returns. Quota errors stop.
 - Targeted provider/compiler/browser/replay suite: 26 passed. Lint/types passed.
 
-Next: review the report's remaining scope limitations before submission. This bundle
-proves discovery and replay; the interstitial result demonstrates detection/escalation,
-not a recorded manual takeover and resume. Nothing has been published or emailed.
+## Completion verification
+
+[`verification/20260913T214456Z/`](verification/20260913T214456Z/manifest.json)
+replays the genuine saved artifact using UI-only pre/postchecks and no model calls.
+All five scenarios passed: completion, duplicate business outcome, policy denial,
+compliance intervention, and same-page resumed completion. `handoff.json` records
+real ownership transfer and stale-token rejection with an explicitly scripted
+operator. A real person can perform sign-off using `--manual-handoff`.
+Screenshots and structured results are included; the resumed receipt was visually
+inspected. The earlier `verification/20260913T165925Z/` attempt failed due to browser
+context creation and has no success manifest. That issue was fixed before both
+subsequent successful verification bundles.
+
+The original discovery bundle remains unchanged as historical evidence. New
+accessibility observations and output binding metadata have automated test coverage;
+the original saved artifact predates those additions. Nothing has been published or emailed.
+
+Final completion checks: 208 tests passed; three dependency deprecation warnings.
+Lint, selected-module type checks, evidence lineage and configured-secret scan passed.

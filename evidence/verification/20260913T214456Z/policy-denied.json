@@ -1,0 +1,52 @@
+{
+  "scenario": "policy-denied",
+  "artifact_hash": "9db18401bdf8399af79cf7be4985673f3e224d6c1551a5c8c04abdea2e05b8fc",
+  "inputs": {
+    "institution_id": "alpha",
+    "member_id": "8830142",
+    "account_id": "CHK-8830142-01",
+    "case_id": "VERIFY-1626bfe10336",
+    "amount": 501,
+    "currency": "USD"
+  },
+  "llm_calls": 0,
+  "outcome": {
+    "category": "BUSINESS_OUTCOME",
+    "code": "POLICY_DENIED",
+    "message": "Policy denied: Requested amount $501.00 exceeds maximum automated limit of $500.00. Requires manual executive authorization.",
+    "details": {
+      "inputs": {
+        "institution_id": "alpha",
+        "member_id": "8830142",
+        "account_id": "CHK-8830142-01",
+        "case_id": "VERIFY-1626bfe10336",
+        "amount": 501,
+        "currency": "USD"
+      },
+      "capability_id": "core.post_provisional_credit"
+    },
+    "money_moved": false,
+    "audit_ref": null,
+    "execution_phase": "BEFORE_SUBMIT",
+    "outputs": {},
+    "failed_step": null,
+    "expected": null,
+    "observed": null,
+    "evidence": "policy-denied.png"
+  },
+  "result": {
+    "kind": "business_outcome",
+    "code": "POLICY_DENIED",
+    "data": {
+      "inputs": {
+        "institution_id": "alpha",
+        "member_id": "8830142",
+        "account_id": "CHK-8830142-01",
+        "case_id": "VERIFY-1626bfe10336",
+        "amount": 501,
+        "currency": "USD"
+      },
+      "capability_id": "core.post_provisional_credit"
+    }
+  }
+}

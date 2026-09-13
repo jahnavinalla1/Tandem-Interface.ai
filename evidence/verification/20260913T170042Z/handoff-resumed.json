@@ -1,0 +1,34 @@
+{
+  "scenario": "handoff-resumed",
+  "artifact_hash": "9db18401bdf8399af79cf7be4985673f3e224d6c1551a5c8c04abdea2e05b8fc",
+  "inputs": {
+    "institution_id": "alpha",
+    "member_id": "8830142",
+    "account_id": "CHK-8830142-01",
+    "case_id": "HANDOFF-80c77d043705",
+    "amount": 150,
+    "currency": "USD"
+  },
+  "llm_calls": 0,
+  "outcome": {
+    "category": "SUCCESS",
+    "code": "COMPLETED",
+    "message": "Capability 'core.post_provisional_credit' replayed successfully with 0 LLM calls",
+    "details": {
+      "memo_code": "MC-7542",
+      "money_moved": true,
+      "drift_events": []
+    },
+    "money_moved": true,
+    "audit_ref": "MC-7542",
+    "execution_phase": "SUBMIT_CONFIRMED",
+    "outputs": {
+      "receipt_reference": "MC-7542",
+      "money_moved": true
+    },
+    "failed_step": null,
+    "expected": null,
+    "observed": null,
+    "evidence": null
+  }
+}

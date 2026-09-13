@@ -1,112 +1,130 @@
 ## Architecture
 
-Tandem separates model-driven browser discovery, compilation, and deterministic
-execution. The implemented target is a local synthetic core-banking portal with
-frames and a multi-step provisional-credit flow. Playwright drives the UI. A typed
-provider boundary (Gemini by default, with optional OpenAI support) sends bounded observations to the model and accepts one validated
-action per cycle. The loop records decisions, rationales, actions and screenshots.
-`discover(goal, target, inputs)` accepts the caller's objective; input validation,
-receipt recognition and the compiler remain specific to provisional credit.
+Tandem implements one end-to-end capability: post a provisional credit in a local
+synthetic banking portal. Gemini receives bounded browser observations and selects
+one typed action per cycle. Playwright executes that action. A recorder preserves
+observations, decisions, rationales and screenshots; a compiler produces parameterized
+YAML. Replay loads YAML without constructing a model client.
 
-The compiler converts actual recorded actions into parameterized YAML. Replay loads
-that artifact without asking a model for decisions. The larger workflow adds a
-SQLite effect ledger, prechecks, postchecks and ownership leases. This separation
-makes money-moving uncertainty explicit, at the cost of more machinery than a
-single-flow recorder requires. Simulator admin APIs control test fixtures; some
-postchecks use simulator inquiry APIs. Thus the current end-to-end system is not
-fully UI-only, an important limitation for the assignment's no-API environment.
+The submission path is `scripts.assignment_evidence` for live discovery and
+`scripts.verify_assignment` for keyless verification. Its credit pre/postchecks
+operate the portal's memo inquiry screen in a separate tab of the same browser
+context. They do not call the target's data APIs. Admin APIs only arrange synthetic
+failure scenarios. The older multi-system effect-engine demos retain API inquiry
+adapters; they are additional demonstrations, not the UI-only assignment path.
+
+I chose a local iframe/table-based portal over a public retail demo to make failure
+injection repeatable and avoid real customer data. I kept a task-specific compiler
+instead of attempting universal workflow inference. Natural-language goal and target
+are caller inputs, but supported inputs, routes and receipt semantics are deliberately
+restricted to provisional credit. The SQLite ledger and lease broker support the
+larger workflow and real ownership transfer without introducing distributed services.
 
 ## Artifact schema
 
-A capability has an ID, version, typed input/output schemas, ordered actions,
-semantic control names, ordered locator candidates, optional frame selectors,
-parameter templates and a scoped commit guard. Effect metadata declares identity,
-monetary bounds, duplicate detection and reconciliation. Receipt and postcheck
-verification supply the success checkpoint. The compiler records the source
-run ID and creation time; a canonical SHA-256 digest detects accidental edits,
-not malicious replacement by someone able to recompute the digest.
+The contract has independent schema and capability versions, typed input/output
+schemas, ordered actions, parameter templates, locator fallbacks, scoped identity
+guards, effect bounds, and pre/postcheck metadata. A source discovery run ID links
+it to evidence; canonical SHA-256 detects unintended modification. A digest is not
+a signature: it does not authenticate an adversarial author who can recompute it.
 
-Inputs separate reusable flow structure from member, account, case and amount.
-The guard binds the actual submitted fields in the commit control's container,
-rather than accepting matching text elsewhere on the page. The artifact can be
-reviewed independently of the model transcript. Compilation is domain-specific:
-it synthesizes the credit contract rather than inferring arbitrary task schemas.
+Fills reference declared input names rather than recorded values. Navigation uses
+logical surface routes. Output properties compiled by the current compiler declare
+`x-selector` extraction bindings and boolean comparison conditions. Outcome metadata
+lists supported business and intervention results. Existing v1 artifacts retain
+compatibility with the original credit receipt bindings. The compiler does not infer
+arbitrary contracts or arbitrary route templates from a recording.
+
+I rejected an unvalidated macro list because a caller needs identity, effect and
+result semantics. The current browser executor explicitly rejects unsupported
+primitives before acting; merely adding a schema enum cannot silently enable an
+unimplemented operation. General per-step condition languages and automated schema
+migration are deliberately outside the implemented capability.
 
 ## Determinism & error handling
 
-Replay executes ordered steps with bounded waits and ordered selector fallbacks.
-It records fallback drift and checks that the model-call counter has not increased.
-The effect engine checks for a prior effect before submission and reconciles an
-ambiguous submission rather than blindly repeating it. The low-level executor is
-not a substitute for the ledger-backed effect engine when invoking repeated cases.
+Replay uses a fixed action sequence, condition-based visibility waits and ordered
+fallbacks. Multiple matches are rejected rather than selecting the first. Failed
+selectors record drift. Commit guards inspect the actual submitted form fields,
+including member, account, case, amount, currency and institution. The UI inquiry
+verifies effect identity independently; duplicate cases return `ALREADY_APPLIED`.
 
-Results distinguish successful completion, business outcomes such as
-`ALREADY_APPLIED`, recoverable/intervention states such as compliance review or
-uncertain effects, and hard failures such as an entity mismatch. Structured results
-carry an outcome code, message, effect state and debugging detail. Session expiry,
-missing controls and guard failures stop progress. The evidence command saves a
-screenshot and structured result for an injected compliance interstitial as well
-as the normal replay. It reloads the exact compiled YAML and uses new case inputs.
+The caller-facing discriminated contract is success with outputs, business outcome
+with code/data, or failure with classification, step, expected/observed context and
+evidence reference. Internal ledger outcomes remain backward-compatible. Not-found
+members are business results; compliance review requires a person; ambiguous effects
+must never be blindly resubmitted. Model inference retries transient server errors
+at most twice, before any browser action executes. Rate-limit/authentication errors
+stop. This is separate from retries of a monetary action, which are not permitted.
+
+The keyless verification command records success, duplicate, over-limit denial,
+intervention and resumed completion. It blocks browser requests to `/api/` and asserts
+zero model calls. The UI inquiry helper reads the screen with Playwright only.
 
 ## Heterogeneity & multi-tenant
 
-The `Surface` boundary separates control observation and action from recorded flow
-semantics. The concrete driver supports frames and selector candidates. A second
-simulator skin demonstrates trusted tenant routing and locator overlays while
-preserving the underlying artifact. This supports reuse but does not establish
-compatibility with arbitrary vendor versions.
+Discovery includes per-frame accessibility snapshots as well as DOM attributes and
+form context. Role/name targets can use Playwright's role selector engine; stable
+field names/classes are fallback options. I retained these fallbacks because legacy
+accessibility metadata may be incomplete. This is a web implementation, not a uniform
+native-desktop element graph or a calibrated confidence-scoring model.
 
-For legacy web, extend observation to frame paths and accessible roles with scoped
-text anchors. For native desktop, implement the same boundary using accessibility
-controls, with screenshot/coordinate targeting only under explicit visual checks.
-Neither desktop nor general visual targeting is implemented. At scale, key approved
-artifacts by vendor/product/version and bind reviewed tenant overlays separately.
-Canary replays and fallback-rate monitoring should quarantine incompatible versions;
-never silently let a tenant override alter effect identity or monetary policy.
+The `Surface` boundary isolates observation/action from business effects. A desktop
+implementation would provide AX/UIA control resolution and visual verification under
+the same contract. Current ambiguity handling is deterministic uniqueness rather than
+a numerical confidence estimate. Tenant overlays specialize selectors and containers
+without copying the effect contract; routing is configured separately. Existing Beta
+demos exercise this design with curated semantic names. Automatic alignment of arbitrary
+model-generated names to tenant overlays remains unimplemented. Production reuse would
+key approved artifacts by vendor/version and quarantine failing canary replays.
 
 ## Escalation & handoff
 
-Replay can stop on an interstitial or uncertain state and persist an intervention.
-The handoff coordinator uses operator leases and fencing tokens to prevent stale
-owners from acting. A browser-session broker retains a Playwright page on its owning
-worker thread; the operator API can issue actions on that same session. Releasing
-control and resuming must preserve the case, session and effect evidence.
+The handoff coordinator releases automation ownership, records the intervention,
+grants a fenced human lease, records sign-off and returns control. The browser broker
+keeps the same worker-owned page and context. Integration tests verify continuity
+and reject a stale automation token while the human owns the session.
 
-The in-process compliance demo exercises clearing the interstitial and resuming.
-Generic browser-session HTTP actions exist, but the specialized compliance-clear
-helper is not directly exposed as an HTTP endpoint. This is a minimal operator
-mechanism, not a complete co-browsing console. Discovery currently raises on its
-cycle limit or execution failure; automated routing of discovery failures into the
-same durable intervention mechanism remains unfinished.
+Keyless evidence exercises this protocol with an explicitly scripted operator and
+resumes on the same page. `--manual-handoff` instead opens a headed browser for a real
+operator. Discovery writes durable intervention requests for model/action failures and
+step exhaustion. With its manual option, recoverable failures pause the synchronous
+loop while a person operates that same page and records action notes. Exhaustion and
+ambiguous submission remain terminal; they are not silently retried. A full co-browsing
+console, automatic artifact amendments from human actions, and recovery after the
+browser process dies are not implemented.
 
 ## Safety
 
-Replay policy includes effect bounds, trusted surface routing and control-scoped
-identity checks; admin mutations require a bearer token. Discovery constrains the
-target to the configured simulator origin and validates action shapes. Its safety
-checks are less complete than replay: model action classification and selector
-choice are not a security boundary, and redirects/click navigation need stronger
-per-action enforcement. Use discovery only on the synthetic local portal.
+Discovery and core-bank replay share destination/method admission and inspect the
+actual control's form action or link target. A commit disguised as CLICK is denied.
+Both paths apply monetary policy and submitted-field identity checks. Navigation
+interception rejects off-allowlist requests exposed by Playwright routing. Redirect
+chains and service workers need additional transport enforcement before adapting
+this policy to untrusted external applications; the local portal uses neither. Irreversible
+synthetic credit is permitted only within the declared policy bounds; this is the
+chosen alternative to requiring approval for every sandbox credit. Compliance
+sign-off belongs to the human path. Admin mutations require a bearer token.
 
-Structured credential-like keys are redacted. OpenAI requests disable storage;
-Gemini free-tier data may be used by Google to improve its products.
-This is not comprehensive PII protection: raw page text, URLs and screenshots can
-retain sensitive information. No real credentials or customer data belong in this
-demo. Production would require pre-provider sanitization, screenshot masking,
-retention controls, secret isolation and independent authorization before submission.
+Before provider/evidence boundaries, credential keys and configured secrets are
+redacted, along with common email, SSN and card-number patterns. Screenshots mask
+password/email/card fields, marked sensitive regions and matching text elements.
+This is defense in depth, not a claim that regexes detect all PII. Real institutional
+deployments need application-specific region inventories, data classification and
+retention policies. This submission uses only synthetic fixtures. Gemini free-tier
+data may be used by Google to improve its products; no real credentials or customers
+should be placed in the simulator. `.env` stays outside Git.
 
 ## Cuts
 
-The required discovery/replay bundle is saved in `evidence/20260913T161444Z/`.
-Gemini 3.6 Flash completed 9 decision cycles and 8 browser actions; 10 inference
-requests include a retry. The compiled artifact replayed with new case inputs and
-zero model calls. An injected compliance interstitial returned `NEEDS_HUMAN` before
-submission. The manifest binds both replays to the discovery run and artifact hash.
-Earlier failed attempts are retained; live testing exposed iframe-context and
-input-name defects that were fixed and regression-tested.
+A genuine Gemini discovery and compiled-artifact replay are retained in
+`evidence/20260913T161444Z/`. Additional UI-only verification and handoff bundles live
+under `evidence/verification/`; their manifests identify exactly which artifact ran.
+Earlier failures are retained and labelled, rather than rewritten as successes.
 
-Deliberate scope limits include one task-specific compiler, synthetic targets,
-no desktop adapter, no production deployment and no full operator console. The evidence bundle does not include a manual takeover/resume recording. Next priorities
-are discovery guard parity and failure handoff, UI-only inquiry capabilities,
-strict output-schema enforcement, and stronger observation redaction. Public
-repository publishing and submission email are separate user-controlled steps.
+The deliberate boundary is one concrete web capability with real failure handling,
+not arbitrary task compilation, desktop automation, production financial compliance,
+or multi-node orchestration. I prioritized shared safety checks, UI-only verification,
+explicit failure results and real ownership transfer over those extensions. A scripted
+operator demonstration is labelled as such; it is not claimed to be a recording of a
+human user. Publishing the repository and sending the submission remain separate steps.

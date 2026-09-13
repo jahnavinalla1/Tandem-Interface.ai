@@ -54,3 +54,8 @@ demo-uncertain:
 
 clean:
 	rm -rf .pytest_cache .ruff_cache *.db *.sqlite test-results evidence/*.png
+
+.PHONY: demo verify-assignment
+# No API key needed: replay the saved artifact and demonstrate exceptional paths.
+demo verify-assignment:
+	uv run python -m scripts.verify_assignment

@@ -4,7 +4,7 @@ from typing import Callable, List, Optional
 
 from playwright.sync_api import Locator, Page
 
-from tandem.domain.errors import PageDriftError
+from tandem.domain.errors import PageDriftError, PolicyViolationError
 from tandem.domain.money import parse_money
 from tandem.surfaces.base import (
     ObservedControl,
@@ -40,7 +40,11 @@ class PlaywrightSurface(Surface):
         """Try locator candidates sequentially. Record drift if primary candidate fails."""
         for idx, selector in enumerate(candidates):
             try:
-                loc = context.locator(selector).first
+                matches = context.locator(selector)
+                matches.first.wait_for(state="visible", timeout=5000 if idx == 0 else 2000)
+                if matches.count() > 1:
+                    raise PolicyViolationError(f"Ambiguous control for '{semantic_target}': {matches.count()} matches")
+                loc = matches.first
                 timeout = 5000 if idx == 0 else 2000
                 if loc.is_visible(timeout=timeout):
                     if idx > 0:
@@ -50,6 +54,8 @@ class PlaywrightSurface(Surface):
                         )
                         self.drift_events.append(drift_msg)
                     return loc, selector
+            except PolicyViolationError:
+                raise
             except Exception:
                 continue
 
@@ -83,7 +89,6 @@ class PlaywrightSurface(Surface):
             before_click()
         loc.click()
         try:
-            self.page.wait_for_timeout(200)
             self.page.wait_for_load_state("networkidle", timeout=3000)
         except Exception:
             pass
@@ -137,7 +142,10 @@ class PlaywrightSurface(Surface):
             else container_selector
         )
 
-        container_loc = context.locator(active_selector).first
+        containers = context.locator(active_selector)
+        if containers.count() > 1:
+            raise PolicyViolationError('Ambiguous commit container')
+        container_loc = containers.first
         try:
             container_loc.wait_for(state="visible", timeout=5000)
         except Exception:

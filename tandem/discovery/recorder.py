@@ -11,6 +11,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from tandem.discovery.provider import BrowserObservation, DiscoveryDecision
+from tandem.security.evidence import redact_text
 
 
 def _now() -> str:
@@ -34,6 +35,8 @@ def redact_secrets(value: Any) -> Any:
         }
     if isinstance(value, list):
         return [redact_secrets(item) for item in value]
+    if isinstance(value, str):
+        return redact_text(value)
     return value
 
 
