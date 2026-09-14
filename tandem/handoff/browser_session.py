@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from playwright.sync_api import Browser, BrowserContext, Page, sync_playwright
+from playwright.sync_api import Browser, BrowserContext, Error, Page, sync_playwright
 
 from tandem.security.evidence import sanitize, screenshot
 
@@ -142,6 +142,19 @@ class BrowserSessionWorker:
         return self._snapshot(browser_context, page)
 
     def _snapshot(self, browser_context: BrowserContext, page: Page) -> dict[str, Any]:
+        for attempt in range(3):
+            try:
+                return self._snapshot_once(browser_context, page)
+            except Error as exc:
+                transient_navigation = 'Execution context was destroyed' in str(exc)
+                if not transient_navigation or attempt == 2:
+                    raise
+                page.wait_for_timeout(100)
+        raise RuntimeError('Browser snapshot retry loop exhausted')
+
+    def _snapshot_once(
+        self, browser_context: BrowserContext, page: Page
+    ) -> dict[str, Any]:
         screenshot_path = self.evidence_dir / "latest.png"
         screenshot_path.write_bytes(screenshot(page))
         controls: list[dict[str, Any]] = []
