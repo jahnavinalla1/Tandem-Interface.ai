@@ -35,8 +35,9 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project
 
-# Install Playwright Chromium browser (also cacheable, independent of source changes)
-RUN uv run playwright install chromium --with-deps
+# Install Playwright Chromium without asking `uv run` to install the local project.
+# At this layer the project source and README intentionally have not been copied yet.
+RUN .venv/bin/playwright install chromium --with-deps
 
 # Copy application source (README.md included) and install the project itself
 COPY . .
