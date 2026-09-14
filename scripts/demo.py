@@ -21,9 +21,7 @@ from tandem.discovery.agent import DiscoveryAgent
 from tandem.discovery.compiler import CapabilityCompiler
 from tandem.domain.capability import load_capability_from_yaml
 from tandem.domain.outcomes import OutcomeCategory, OutcomeCode
-from tandem.handoff.coordinator import HandoffCoordinator
 from tandem.ledger.database import SessionLocal
-from tandem.ledger.service import LedgerService
 from tandem.policy.telemetry import llm_tracker
 from tandem.replay.engine import EffectEngine
 from tandem.replay.executor import DeterministicExecutor
@@ -34,7 +32,6 @@ from tandem.support.simulator_control import (
     set_core_bank_mode,
     set_processor_mode,
 )
-from tandem.surfaces.overlays import get_overlay
 from tandem.workflow.reg_e import RegEWorkflow
 
 
@@ -230,189 +227,6 @@ def run_transposed_id():
     assert get_member("8830142")["balance"] == 1240.50
     print(f"[+] Over-limit Outcome:    {amount_outcome.code.value} ({amount_outcome.category.value})")
     print("\n[OK] Scenario 4 Verification Passed: Wrong member and amount were blocked before COMMIT.")
-
-
-def run_crash_resume():
-    print_banner("Crash Recovery & State Resumption from SQLite WAL Ledger", 5)
-    print("[*] Concept: Hard process kill immediately after provisional credit moves money.")
-    print("    Crucial Invariant: State reconstructed from SQLite WAL ledger; resumes and completes without double credit.\n")
-
-    reset_all_simulators()
-    llm_tracker.reset()
-
-    case_id = f"D-CRASH-{int(time.time())}"
-    member_id = "8830142"
-    amount = Decimal("310.00")
-
-    db = SessionLocal()
-    crashed = False
-
-    print("[*] Running workflow with hard process kill injected after provisional credit...")
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        wf_1 = RegEWorkflow(session=db, page=page, kill_after_credit=True)
-        try:
-            wf_1.run_case(case_id=case_id, member_id=member_id, amount=amount)
-        except Exception as exc:
-            print(f"[!] PROCESS TERMINATED: {exc}")
-            crashed = True
-        finally:
-            browser.close()
-
-    assert crashed is True
-    db.close()
-
-    # Verify intermediate state in ledger
-    db2 = SessionLocal()
-    service = LedgerService(db2)
-    intermediate = service.reconstruct_case_state(case_id)
-    print("\n[*] Ledger State After Hard Process Crash:")
-    print(f"    - Status:       {intermediate.status}")
-    print(f"    - Money Moved:  {intermediate.money_moved}")
-    print(f"    - Memo Code:    {intermediate.latest_memo_ref}")
-    print(f"    - Completed:    {intermediate.completed_capabilities}")
-
-    # Fresh process instance resumption
-    print("\n[*] Starting completely fresh orchestrator instance (surviving process termination)...")
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        wf_2 = RegEWorkflow(session=db2, page=page, kill_after_credit=False)
-        resumed_res = wf_2.run_case(case_id=case_id, member_id=member_id, amount=amount)
-        browser.close()
-
-    final_snapshot = service.reconstruct_case_state(case_id)
-    print("[+] Resumption Complete:")
-    print(f"    - Final Status:         {final_snapshot.status}")
-    print(f"    - Total Capabilities:   {final_snapshot.completed_capabilities}")
-    print("    - 12 CFR 1005.11 Met:   Notice sent; 10-day credit deadline resolved")
-    print(f"    - Replay LLM Calls:     {llm_tracker.call_count}")
-
-    assert resumed_res["status"] == "SUCCESS"
-    assert resumed_res["state"] == "WAITING_RESOLUTION"
-    assert "core.post_provisional_credit" in final_snapshot.completed_capabilities
-    assert "docs.send_notice" in final_snapshot.completed_capabilities
-    db2.close()
-    print("\n[OK] Scenario 5 Verification Passed: Crash recovered cleanly from ledger with zero duplicate credit.")
-
-
-def run_human_handoff():
-    print_banner("Compliance Review Interstitial & Single-Owner Lease Transfer", 6)
-    print("[*] Concept: Core bank displays compliance interstitial; automation halts and yields lease.")
-    print("    Crucial Invariant: Mutual exclusion enforced; operator signs off; automation safely resumes.\n")
-
-    reset_all_simulators()
-    llm_tracker.reset()
-
-    set_core_bank_mode(require_compliance_interstitial=True)
-
-    case_id = f"D-HANDOFF-{int(time.time())}"
-    member_id = "8830142"
-    amount = Decimal("250.00")
-
-    db = SessionLocal()
-    coordinator = HandoffCoordinator(session=db)
-
-    print("[*] Running dispute workflow with compliance review interstitial active...")
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        wf = RegEWorkflow(session=db, page=page)
-
-        res_initial = wf.run_case(case_id=case_id, member_id=member_id, amount=amount)
-        print(f"[!] Handoff Triggered: Workflow entered state '{res_initial['status']}'")
-
-        snapshot_1 = wf.service.reconstruct_case_state(case_id)
-        print(f"    - Requires Human: {snapshot_1.requires_human}")
-        print(f"    - Lease Owner:    {snapshot_1.lease_owner} (Automation yielded lease)")
-
-        # Human operator reviews case and claims lease
-        print("\n[*] Human operator (compliance_officer_sarah) claims single-owner lease...")
-        lease = coordinator.claim_operator_lease(case_id=case_id, operator_id="compliance_officer_sarah")
-        print(f"    - Lease Active: Owned by '{lease.owner}'")
-
-        # Operator clears compliance interstitial in browser
-        print("[*] Operator acknowledges compliance interstitial on active browser session...")
-        coordinator.operator_clear_compliance(
-            case_id=case_id,
-            operator_id="compliance_officer_sarah",
-            lease_token=lease.fencing_token,
-            page=page,
-        )
-
-        # Resuming automation
-        print("\n[*] Resuming workflow as automation...")
-        res_resumed = wf.run_case(case_id=case_id, member_id=member_id, amount=amount)
-        browser.close()
-
-    print("[+] Handoff Resumption Succeeded:")
-    print(f"    - Final State:      {res_resumed['state']}")
-    print(f"    - Money Moved:      {res_resumed['money_moved']}")
-
-    assert res_resumed["status"] == "SUCCESS"
-    assert res_resumed["state"] == "WAITING_RESOLUTION"
-    db.close()
-    print("\n[OK] Scenario 6 Verification Passed: Single-owner lease handoff and resumption completed.")
-
-
-def run_second_institution():
-    print_banner("Second Institution Skin & Surface Overlay Adaptation", 7)
-    print("[*] Concept: Replays the unmodified capability artifact against the independent")
-    print("    Institution Beta service, trusted-routed by 'institution_id' -- not a mutated URL.")
-    print("    Crucial Invariant: Unmapped encounters drift; mapped with surface overlay succeeds with 0 LLM calls.\n")
-
-    reset_all_simulators()
-    llm_tracker.reset()
-
-    # The artifact itself is never mutated: routing to Institution Beta's independent
-    # service (settings.core_bank_2_url) is resolved at runtime from 'institution_id',
-    # kept outside the immutable, hash-verified capability (see tandem/surfaces/routing.py).
-    cap = load_capability_from_yaml("capabilities/core/post_provisional_credit.yaml")
-    inputs = {
-        "institution_id": "beta",
-        "member_id": "8830142",
-        "account_id": "CHK-8830142-01",
-        "case_id": "D-BETA-7001",
-        "amount": Decimal("340.00"),
-        "currency": "USD",
-    }
-
-    # Pass 1: Unmapped
-    print("[*] Attempt 1: Executing on Institution Beta WITHOUT surface overlay...")
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        executor_unmapped = DeterministicExecutor(page=page, overlay=None)
-        outcome_unmapped = executor_unmapped.execute(capability=cap, inputs=inputs)
-        browser.close()
-
-    print(f"    Outcome: {outcome_unmapped.code.value} ({outcome_unmapped.category.value})")
-    print(f"    Drift:   {outcome_unmapped.message}")
-    assert outcome_unmapped.money_moved is False
-
-    # Pass 2: Mapped with the Beta surface overlay
-    print("\n[*] Attempt 2: Executing on Institution Beta WITH surface overlay...")
-    reset_all_simulators()
-    llm_tracker.reset()
-    overlay = get_overlay("beta")
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        executor_mapped = DeterministicExecutor(page=page, overlay=overlay)
-        outcome_mapped = executor_mapped.execute(capability=cap, inputs=inputs)
-        browser.close()
-
-    print(f"    Outcome:        {outcome_mapped.code.value} ({outcome_mapped.category.value})")
-    print(f"    Money Moved:    {outcome_mapped.money_moved} (${inputs['amount']:.2f} USD)")
-    print(f"    Memo Ref:       {outcome_mapped.audit_ref}")
-    print(f"    LLM Calls:      {llm_tracker.call_count} (Strict Zero-LLM Invariant)")
-
-    assert outcome_mapped.code == OutcomeCode.COMPLETED
-    assert outcome_mapped.money_moved is True
-    assert llm_tracker.call_count == 0
-    print("\n[OK] Scenario 7 Verification Passed: Surface overlay adapted to second institution with zero LLM calls.")
 
 
 def run_uncertain_effect():

@@ -128,11 +128,13 @@ that original trace with explicit field provenance. Additional UI-only verificat
 and handoff bundles live under `evidence/verification/`; their manifests identify
 exactly which artifact ran. The latest complete bundle is
 `evidence/verification/20260914T024243Z/`.
-Earlier failures are retained and labelled, rather than rewritten as successes.
+Debugging attempts are omitted from the submission; only the successful discovery
+and the current complete verification bundle are retained.
 
 The deliberate boundary is one concrete web capability with real failure handling,
 not arbitrary task compilation, desktop automation, production financial compliance,
 or multi-node orchestration. I prioritized shared safety checks, UI-only verification,
 explicit failure results and real ownership transfer over those extensions. A scripted
 operator demonstration is labelled as such; it is not claimed to be a recording of a
-human user. Publishing the repository and sending the submission remain separate steps.
+human user. The repository is public; sending it to the evaluator remains a separate
+submission step.

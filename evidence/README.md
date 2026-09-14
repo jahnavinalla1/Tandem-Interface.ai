@@ -3,7 +3,7 @@
 The successful bundle is [20260913T161444Z](20260913T161444Z/manifest.json).
 It contains a genuine Gemini 3.6 Flash discovery, the compiled artifact, successful
 new-case replay and an injected-interstitial replay. Both replays used zero model
-calls. See [RUN_STATUS.md](RUN_STATUS.md) for verified results and earlier attempts.
+calls. See [RUN_STATUS.md](RUN_STATUS.md) for the exact verified results.
 
 The latest keyless verification of the current canonical artifact is
 [verification/20260914T024243Z](verification/20260914T024243Z/manifest.json). It

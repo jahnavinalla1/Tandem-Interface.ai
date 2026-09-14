@@ -260,6 +260,19 @@ uv sync --extra dev --frozen
 uv run playwright install chromium
 ```
 
+### Fast evaluator path
+
+After setup, run the committed capability through the five required outcomes:
+
+```bash
+make verify-assignment
+```
+
+This starts the local simulators when needed, replays the hash-verified capability,
+and writes a timestamped evidence bundle. It requires no provider credential and
+asserts that replay makes zero model calls. A successful run prints completion,
+duplicate prevention, policy denial, intervention and handoff-resume outcomes.
+
 ### Running the Test Suite
 ```bash
 # Run all unit, integration, e2e, and regression tests
@@ -332,8 +345,8 @@ state — some by deliberate scope choice, some as known gaps.
 [evidence/20260913T161444Z](evidence/20260913T161444Z/manifest.json) contains real
 Gemini decisions, browser observations, screenshots, the compiled artifact and
 zero-model replay results. The compiled demo artifact is generated from this run;
-other curated capabilities remain fixtures. Earlier failed attempts are retained
-in [evidence/RUN_STATUS.md](evidence/RUN_STATUS.md).
+other curated capabilities remain fixtures. [evidence/RUN_STATUS.md](evidence/RUN_STATUS.md)
+identifies the two submission evidence bundles and their hashes.
 
 Run `make verify-assignment` for the keyless assignment demonstration. It checks
 successful replay, duplicate prevention, policy denial, intervention, and same-page

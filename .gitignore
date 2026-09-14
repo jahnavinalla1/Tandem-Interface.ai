@@ -56,6 +56,15 @@ htmlcov/
 test-results/
 playwright-report/
 
+# Generated run evidence; retain only the reviewed submission bundles
+evidence/[0-9]*/
+!evidence/20260913T161444Z/
+!evidence/20260913T161444Z/**
+evidence/verification/*/
+!evidence/verification/20260914T024243Z/
+!evidence/verification/20260914T024243Z/**
+evidence/verification/20260914T024243Z/*.db
+
 # OS
 .DS_Store
 Thumbs.db

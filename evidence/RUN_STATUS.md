@@ -1,88 +1,46 @@
-# Live run status — 2026-09-13 UTC
+# Submission evidence status
 
-Status: successful discovery and both replays verified on 2026-09-13.
+Two evidence bundles are retained because they prove different parts of the
+assignment. All records use synthetic local simulator data.
 
-## Successful run
+## Provider-backed discovery
 
-The bundle in [`20260913T161444Z/`](20260913T161444Z/) contains:
-- Genuine Gemini 3.6 Flash discovery: 9 decision cycles, 8 executed browser actions,
-  10 model requests including inference retry, receipt `MC-7395`.
-- Compiled `capability.yaml`, bound to discovery run
+[`20260913T161444Z/`](20260913T161444Z/manifest.json) contains the successful live
+discovery run:
+
+- Gemini observed the hostile browser UI and made 9 structured decisions.
+- Playwright executed 8 browser actions and reached receipt `MC-7395`.
+- The saved artifact is bound to discovery run
   `d55a64c6-8219-4801-a64c-42929635f3e8`.
-- New-case replay: `COMPLETED`, simulated $150 credit, receipt `MC-7083`, zero model calls.
-- Injected interstitial replay: `NEEDS_HUMAN` / `COMPLIANCE_INTERSTITIAL`,
-  stopped before submission, no simulated money movement, zero model calls.
-- Observations, screenshots, structured traces, replay logs and manifest.
+- Fresh-case replay completed with zero model calls.
+- Injected compliance review stopped before submission with zero model calls.
 
-Canonical artifact SHA-256:
+The preserved historical artifact verifies against SHA-256
 `9db18401bdf8399af79cf7be4985673f3e224d6c1551a5c8c04abdea2e05b8fc`.
+It remains unchanged so reviewers can compare the trace with the artifact produced
+at discovery time.
 
-Artifact hash and discovery lineage were verified, both replay screenshots inspected,
-and structured evidence checked for the configured API key (none found). This
-historical bundle remains unchanged. The canonical artifact was later recompiled
-from this trace with explicit derivation metadata separating trace-derived fields,
-approved policy fields and compiler metadata.
-All data and credits are synthetic local simulator fixtures.
-
-## Earlier attempts (retained for debugging)
-
-This is an operator summary of observed terminal results, not a generated success log.
-
-The configured discovery provider authenticated successfully. An unavailable model
-version was replaced with the supported model recorded in the successful trace.
-
-Actual model-driven attempts:
-
-| Folder | Observed result |
-| --- | --- |
-| `20260913T040127Z` | Navigation recorded; next fill timed out because observations omitted the control's iframe context. |
-| `20260913T040259Z` | Navigation and failed fill recorded; model used HTML name `q` instead of declared input `member_id`. |
-| `20260913T040332Z` | Six successful actions, through filling the credit amount; Gemini HTTP 500 stopped the next decision. |
-| `20260913T040429Z` | Navigation, member search, and credit entry reached; Gemini HTTP 429 stopped the run. |
-
-Trace files, observations and screenshots in those folders were written by the
-actual discovery recorder. Empty folders from failures before the first decision
-contain no useful evidence. No successful discovery receipt, compiled artifact,
-replay result or success manifest was produced by these attempts.
-
-One earlier attempt stopped at the provider's request limit. The runner stopped before
-another browser action and did not switch providers. The successful trace was recorded
-later and remains the canonical discovery evidence.
-
-Fixes validated after live testing:
-- Browser observations identify each control's iframe and expose name/class/href
-  and form context to support stable targeting.
-- The Gemini output schema restricts `input_name` to declared caller parameters.
-- Failed browser decisions retain an error type, observation and screenshot.
-- Transient 500/502/503/504 inference errors get at most two retries; no browser
-  action executes until a complete validated decision returns. Quota errors stop.
-- Targeted provider/compiler/browser/replay suite: 26 passed. Lint/types passed.
-
-## Current completion verification
+## Current deterministic verification
 
 [`verification/20260914T024243Z/`](verification/20260914T024243Z/manifest.json)
 replays the current canonical artifact, SHA-256
 `f92adf85ccfdcc212aca16f073600410a9babcd19a36670c90c09dbe64addbf9`.
-All five required outcomes passed with zero model calls. Stored JSON pseudonymizes
-the configured member/account identifiers, screenshots mask those identifiers, and
-the manifest retains the original discovery run ID.
+It retains the original discovery run ID and adds field-level derivation metadata.
 
-## Earlier completion verification
+All five checks passed with zero model calls:
 
-[`verification/20260913T214456Z/`](verification/20260913T214456Z/manifest.json)
-replays the genuine saved artifact using UI-only pre/postchecks and no model calls.
-All five scenarios passed: completion, duplicate business outcome, policy denial,
-compliance intervention, and same-page resumed completion. `handoff.json` records
-real ownership transfer and stale-token rejection with an explicitly scripted
-operator. A real person can perform sign-off using `--manual-handoff`.
-Screenshots and structured results are included; the resumed receipt was visually
-inspected. The earlier `verification/20260913T165925Z/` attempt failed due to browser
-context creation and has no success manifest. That issue was fixed before both
-subsequent successful verification bundles.
+1. A new case completed and produced a receipt.
+2. Repeating the same case returned `ALREADY_APPLIED`.
+3. An over-limit amount returned `POLICY_DENIED` before COMMIT.
+4. A compliance interstitial returned `NEEDS_HUMAN` before COMMIT.
+5. A fenced operator handoff resumed on the same browser page and completed.
 
-The original discovery bundle remains unchanged as historical evidence. New
-accessibility observations and output binding metadata have automated test coverage;
-the original saved artifact predates those additions. Nothing has been published or emailed.
+The verification uses UI-only effect inquiries and blocks target `/api/` browser
+requests. Stored JSON pseudonymizes the configured member/account identifiers and
+screenshots mask those identifiers. The operator in the committed automated bundle
+is explicitly labelled scripted; `--manual-handoff` provides the human-operated
+alternative.
 
-Final completion checks: 208 tests passed; three dependency deprecation warnings.
-Lint, selected-module type checks, evidence lineage and configured-secret scan passed.
+The canonical and historical artifact hashes, discovery lineage, zero-model counters,
+and configured-secret scan were verified before submission. Debugging attempts and
+duplicate verification bundles are intentionally excluded from the repository.

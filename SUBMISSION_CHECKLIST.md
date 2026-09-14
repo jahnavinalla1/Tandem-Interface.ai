@@ -29,7 +29,8 @@ or replay it. `.env` and operator databases are ignored by Git.
 Scope limits: native desktop execution, universal task compilation, automatic tenant
 semantic alignment and a full remote co-browsing UI are not implemented. The report
 explains these cuts. The recorded operator is scripted; it is not presented as a
-recording of a person. Public repository publication and submission are not performed.
+recording of a person. The GitHub repository is public; sending the final submission
+remains an external step for the candidate.
 
 The current artifact passed all five end-to-end verification outcomes with no new
 Gemini calls. Final local verification: 208 application tests and 10 preserved
