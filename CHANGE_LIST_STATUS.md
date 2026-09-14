@@ -1,7 +1,7 @@
-# Prioritized feedback status
+# Assessment requirement status
 
-This file maps the 27 requested improvements to concrete implementation or an honest
-scope boundary. It is a review aid, not a substitute for the tests and evidence.
+This file maps 27 assessment requirements to concrete implementation or an explicit
+scope boundary. It is a review aid for the tests and evidence.
 
 | # | Requested improvement | Status and proof |
 |---:|---|---|

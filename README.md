@@ -355,8 +355,8 @@ Use `uv run python -m scripts.verify_assignment --manual-handoff` to operate the
 headed browser yourself. Both paths use browser UI inquiries for replay checks.
 The live discovery runner accepts `--manual-handoff` too.
 
-[`CHANGE_LIST_STATUS.md`](CHANGE_LIST_STATUS.md) maps every item in the prioritized
-feedback to its implementation, evidence, test, or explicit scope boundary.
+[`CHANGE_LIST_STATUS.md`](CHANGE_LIST_STATUS.md) maps the detailed assessment
+requirements to their implementation, evidence, tests, or explicit scope boundary.
 
 Discovery and replay share destination and control admission checks, and discovery
 checks the bound form before submitting. Evidence masks common sensitive fields.

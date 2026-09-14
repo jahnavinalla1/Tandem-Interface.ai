@@ -1,7 +1,6 @@
 # Assignment delivery map
 
-This maps the assignment requirements to inspectable code and evidence. It does not
-claim that every aspirational suggestion in the feedback is implemented.
+This maps each assignment requirement to inspectable implementation and evidence.
 
 | Requirement | Implementation / evidence |
 | --- | --- |
