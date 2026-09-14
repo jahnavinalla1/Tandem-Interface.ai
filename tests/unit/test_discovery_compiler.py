@@ -89,6 +89,10 @@ def test_capability_compiler_generates_valid_yaml_and_hash(tmp_path: Path):
     assert loaded.effect.effect_class == EffectClass.COMMIT
     assert loaded.effect.bounds.max_amount == 500.00
     assert loaded.scoped_guard.container_selector == "#credit_action_container, .confirm-panel"
+    assert loaded.derivation is not None
+    assert "steps" in loaded.derivation.discovery_derived
+    assert loaded.derivation.policy_profile == "capabilities/core/post_provisional_credit.yaml"
+    assert "effect.bounds" in loaded.derivation.policy_derived
     assert len(loaded.steps) == 5
     assert loaded.steps[1].input_value_template == "{{input.member_id}}"
     assert loaded.steps[2].input_value_template == "{{input.case_id}}"

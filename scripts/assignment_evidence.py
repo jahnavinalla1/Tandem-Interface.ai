@@ -3,7 +3,9 @@
 import argparse
 import json
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 from playwright.sync_api import sync_playwright
@@ -16,7 +18,7 @@ from tandem.domain.capability import load_capability_from_yaml
 from tandem.domain.outcomes import OutcomeCode
 from tandem.policy.telemetry import llm_tracker
 from tandem.replay.executor import DeterministicExecutor
-from tandem.security.evidence import screenshot
+from tandem.security.evidence import sanitize_evidence, screenshot
 from tandem.support.simulator_control import ensure_simulators_running, set_core_bank_mode
 
 
@@ -37,7 +39,7 @@ def main() -> None:
     run_dir.mkdir(parents=True, exist_ok=False)
     inputs = dict(institution_id='alpha', member_id='8830142',
                   account_id='CHK-8830142-01', case_id=f'D-DISC-{uuid4().hex[:12]}',
-                  amount=150.0, currency='USD')
+                  amount=Decimal('150.00'), currency='USD')
     ensure_simulators_running()
     llm_tracker.reset()
     with sync_playwright() as playwright:
@@ -55,7 +57,7 @@ def main() -> None:
                 raise RuntimeError('Discovery did not demonstrate a real successful model-driven run')
             _, artifact = CapabilityCompiler(str(run_dir)).compile(trace, 'capability.yaml')
             cap = load_capability_from_yaml(str(artifact))
-            results = []
+            results: list[dict[str, Any]] = []
             for scenario in ('replay', 'replay-interstitial'):
                 inputs['case_id'] = f'D-REPLAY-{uuid4().hex[:12]}'
                 llm_tracker.reset()
@@ -64,12 +66,21 @@ def main() -> None:
                     if scenario == 'replay-interstitial':
                         set_core_bank_mode(require_compliance_interstitial=True)
                     outcome = DeterministicExecutor(page, ui_checks=True).execute(cap, inputs)
-                    (run_dir / f'{scenario}.png').write_bytes(screenshot(page))
+                    identifiers = [str(inputs['member_id']), str(inputs['account_id'])]
+                    (run_dir / f'{scenario}.png').write_bytes(
+                        screenshot(page, identifiers=identifiers)
+                    )
                     record = dict(scenario=scenario, artifact_hash=cap.artifact_hash,
                                   source_discovery_run_id=cap.source_discovery_run_id,
                                   inputs=inputs.copy(), llm_calls=llm_tracker.call_count,
                                   outcome=outcome.model_dump(mode='json'))
-                    (run_dir / f'{scenario}.json').write_text(json.dumps(record, indent=2))
+                    (run_dir / f'{scenario}.json').write_text(
+                        json.dumps(
+                            sanitize_evidence(record, identifiers=identifiers),
+                            indent=2,
+                            default=str,
+                        )
+                    )
                     results.append(record)
                     if llm_tracker.call_count != 0:
                         raise RuntimeError('Replay called the model')

@@ -1,5 +1,5 @@
 # Compiled by Tandem CapabilityCompiler
-# Canonical SHA-256: 9db18401bdf8399af79cf7be4985673f3e224d6c1551a5c8c04abdea2e05b8fc
+# Canonical SHA-256: f92adf85ccfdcc212aca16f073600410a9babcd19a36670c90c09dbe64addbf9
 
 id: core.post_provisional_credit
 version: 1.0.0
@@ -67,11 +67,21 @@ output_schema:
   properties:
     receipt_reference:
       type: string
+      x-selector: '#receipt_memo_code, .result-memo-code'
     money_moved:
       type: boolean
+      x-selector: '#receipt_money_moved'
+      x-equals: MONEY_MOVED=TRUE
   required:
   - receipt_reference
   - money_moved
+  x-business-outcomes:
+  - MEMBER_NOT_FOUND
+  - ALREADY_APPLIED
+  - POLICY_DENIED
+  x-interventions:
+  - COMPLIANCE_INTERSTITIAL
+  - POSTCHECK_UNCERTAIN
 scoped_guard:
   guard_id: primary_commit_guard
   container_selector: form
@@ -163,6 +173,29 @@ steps:
   frame_selector: iframe[id="core_workspace_frame"]
   guard_ref: primary_commit_guard
 source_discovery_run_id: d55a64c6-8219-4801-a64c-42929635f3e8
+derivation:
+  discovery_derived:
+  - id
+  - description
+  - created_at
+  - steps
+  - effect.class
+  - scoped_guard.container_selector
+  - source_discovery_run_id
+  policy_profile: capabilities/core/post_provisional_credit.yaml
+  policy_derived:
+  - effect.identity
+  - effect.precheck
+  - effect.postcheck
+  - effect.reconciliation
+  - effect.bounds
+  - input_schema
+  - output_schema
+  - scoped_guard.expected_*
+  compiler_derived:
+  - artifact_hash
+  - version
+  - schema_version
 supported_surfaces:
 - core_bank
-artifact_hash: 9db18401bdf8399af79cf7be4985673f3e224d6c1551a5c8c04abdea2e05b8fc
+artifact_hash: f92adf85ccfdcc212aca16f073600410a9babcd19a36670c90c09dbe64addbf9

@@ -1,18 +1,19 @@
-"""Interactive demonstration CLI for the Tandem Financial Automation System.
+"""Focused assessment demonstration for the Tandem automation system.
 
-Executes all 8 core demonstration scenarios specified in docs/product-spec.md:
+Executes five primary assessment scenarios:
   1. discovery: LLM agent discovers workflow and compiles capability artifact
   2. replay-new-case: Zero-LLM deterministic replay on fresh dispute
   3. replay-same-case: Precheck idempotency prevents duplicate provisional credit
-  4. transposed-id: Scoped container guard prevents misdirected funds on confusable account
-  5. crash-resume: Hard crash mid-procedure resumed safely from persisted SQLite WAL ledger
-  6. human-handoff: Compliance interstitial triggering single-owner lease transfer and resumption
-  7. second-institution: Structural UI skin adaptation using surface overlay with zero LLM calls
-  8. uncertain-effect: 504 timeout reconciliation and escalation without blind retry
+  4. wrong-member-or-amount: Identity and policy guards block unsafe submissions
+  5. uncertain-effect: Commit-response loss is reconciled without a blind retry
+
+Crash recovery, human handoff, and tenant overlays remain covered by the automated
+integration and regression suites rather than expanding the primary demo.
 """
 
 import argparse
 import time
+from decimal import Decimal
 
 from playwright.sync_api import sync_playwright
 
@@ -61,7 +62,7 @@ def run_discovery():
         discovery_inputs = {
             "member_id": "8830142",
             "case_id": "D-DISCOVERY-001",
-            "amount": 150.00,
+            "amount": Decimal("150.00"),
         }
         trace = agent.discover_provisional_credit(inputs=discovery_inputs)
         browser.close()
@@ -101,7 +102,7 @@ def run_replay_new_case():
         "member_id": "8830142",
         "account_id": "CHK-8830142-01",
         "case_id": case_id,
-        "amount": 175.50,
+        "amount": Decimal("175.50"),
         "currency": "USD",
     }
 
@@ -139,7 +140,7 @@ def run_replay_same_case():
         "member_id": "8830142",
         "account_id": "CHK-8830142-01",
         "case_id": case_id,
-        "amount": 210.00,
+        "amount": Decimal("210.00"),
         "currency": "USD",
     }
 
@@ -176,7 +177,7 @@ def run_replay_same_case():
 
 
 def run_transposed_id():
-    print_banner("Container Scoped Guard (Prevent Misdirected Funds)", 4)
+    print_banner("Wrong Member or Amount Blocked Before COMMIT", 4)
     print("[*] Concept: Confusable account transposed in search or DOM (#8830124 vs #8830142).")
     print("    Crucial Invariant: Scoped guard inspects confirmation container; halts with ENTITY_BINDING_MISMATCH.\n")
 
@@ -201,7 +202,19 @@ def run_transposed_id():
         executor = DeterministicExecutor(page=page)
         outcome = executor.execute(
             capability=transposed_cap,
-            inputs={"member_id": "8830142", "case_id": "D-TRANSPOSE-4001", "amount": 100.00},
+            inputs={"member_id": "8830142", "case_id": "D-TRANSPOSE-4001", "amount": Decimal("100.00")},
+        )
+        amount_page = browser.new_page()
+        amount_outcome = DeterministicExecutor(page=amount_page).execute(
+            capability=cap,
+            inputs={
+                "institution_id": "alpha",
+                "member_id": "8830142",
+                "account_id": "CHK-8830142-01",
+                "case_id": "D-OVER-LIMIT-4002",
+                "amount": Decimal("501.00"),
+                "currency": "USD",
+            },
         )
         browser.close()
 
@@ -211,9 +224,12 @@ def run_transposed_id():
 
     assert outcome.code == OutcomeCode.ENTITY_BINDING_MISMATCH
     assert outcome.money_moved is False
+    assert amount_outcome.code == OutcomeCode.POLICY_DENIED
+    assert amount_outcome.money_moved is False
     assert get_member("8830124")["balance"] == 410.25
     assert get_member("8830142")["balance"] == 1240.50
-    print("\n[OK] Scenario 4 Verification Passed: Container guard caught account mismatch before commit.")
+    print(f"[+] Over-limit Outcome:    {amount_outcome.code.value} ({amount_outcome.category.value})")
+    print("\n[OK] Scenario 4 Verification Passed: Wrong member and amount were blocked before COMMIT.")
 
 
 def run_crash_resume():
@@ -226,7 +242,7 @@ def run_crash_resume():
 
     case_id = f"D-CRASH-{int(time.time())}"
     member_id = "8830142"
-    amount = 310.00
+    amount = Decimal("310.00")
 
     db = SessionLocal()
     crashed = False
@@ -293,7 +309,7 @@ def run_human_handoff():
 
     case_id = f"D-HANDOFF-{int(time.time())}"
     member_id = "8830142"
-    amount = 250.00
+    amount = Decimal("250.00")
 
     db = SessionLocal()
     coordinator = HandoffCoordinator(session=db)
@@ -358,7 +374,7 @@ def run_second_institution():
         "member_id": "8830142",
         "account_id": "CHK-8830142-01",
         "case_id": "D-BETA-7001",
-        "amount": 340.00,
+        "amount": Decimal("340.00"),
         "currency": "USD",
     }
 
@@ -400,8 +416,8 @@ def run_second_institution():
 
 
 def run_uncertain_effect():
-    print_banner("Uncertain Effect Handling (504 Timeout Escalation)", 8)
-    print("[*] Concept: External processor returns 504 Gateway Timeout on commit action.")
+    print_banner("Uncertain Effect Handling (504 Timeout Escalation)", 5)
+    print("[*] Concept: The target accepts COMMIT but its response disappears.")
     print("    Crucial Invariant: Queries postcheck inquiry; if unconfirmed, routes to UNCERTAIN_EFFECT; never blindly retries.\n")
 
     # Part A: Postcheck Reconciliation
@@ -432,7 +448,7 @@ def run_uncertain_effect():
         "member_id": member_id,
         "account_id": "CHK-8830142-01",
         "case_id": case_id,
-        "amount": 215.00,
+        "amount": Decimal("215.00"),
         "currency": "USD",
     }
 
@@ -470,7 +486,7 @@ def run_uncertain_effect():
     assert outcome.code == OutcomeCode.UNCERTAIN_EFFECT
     assert outcome.money_moved is False
     db2.close()
-    print("\n[OK] Scenario 8 Verification Passed: Handled ambiguous commit without blind retry.")
+    print("\n[OK] Scenario 5 Verification Passed: Handled ambiguous commit without blind retry.")
 
 
 
@@ -478,10 +494,7 @@ SCENARIOS = {
     "discovery": run_discovery,
     "replay-new-case": run_replay_new_case,
     "replay-same-case": run_replay_same_case,
-    "transposed-id": run_transposed_id,
-    "crash-resume": run_crash_resume,
-    "human-handoff": run_human_handoff,
-    "second-institution": run_second_institution,
+    "wrong-member-or-amount": run_transposed_id,
     "uncertain-effect": run_uncertain_effect,
 }
 
@@ -510,7 +523,7 @@ def main():
         for name, fn in SCENARIOS.items():
             fn()
         print("\n" + "=" * 75)
-        print("  ALL 8 DEMONSTRATION SCENARIOS EXECUTED SUCCESSFULLY")
+        print("  ALL 5 ASSESSMENT SCENARIOS EXECUTED SUCCESSFULLY")
         print(f"  Total Elapsed Time: {time.time() - start_time:.2f}s")
         print("=" * 75 + "\n")
     else:

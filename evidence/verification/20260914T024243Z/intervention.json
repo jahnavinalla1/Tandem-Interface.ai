@@ -1,0 +1,39 @@
+{
+  "scenario": "intervention",
+  "artifact_hash": "f92adf85ccfdcc212aca16f073600410a9babcd19a36670c90c09dbe64addbf9",
+  "inputs": {
+    "institution_id": "alpha",
+    "member_id": "****0142",
+    "account_id": "**********2-01",
+    "case_id": "HANDOFF-037b923ca2eb",
+    "amount": "150.00",
+    "currency": "USD"
+  },
+  "llm_calls": 0,
+  "outcome": {
+    "category": "NEEDS_HUMAN",
+    "code": "COMPLIANCE_INTERSTITIAL",
+    "message": "Compliance review interstitial encountered; manual operator sign-off required",
+    "details": {
+      "interstitial_type": "REG_E_COMPLIANCE_REVIEW"
+    },
+    "money_moved": false,
+    "audit_ref": null,
+    "execution_phase": "BEFORE_SUBMIT",
+    "outputs": {},
+    "failed_step": "step_5_fill_case_id",
+    "expected": "Unique allowlisted control and matching declared inputs",
+    "observed": "Compliance review interstitial encountered; manual operator sign-off required",
+    "evidence": "intervention.png"
+  },
+  "result": {
+    "kind": "failure",
+    "classification": "NEEDS_HUMAN",
+    "code": "COMPLIANCE_INTERSTITIAL",
+    "step": "step_5_fill_case_id",
+    "expected": "Unique allowlisted control and matching declared inputs",
+    "observed": "Compliance review interstitial encountered; manual operator sign-off required",
+    "evidence": "intervention.png",
+    "requires_human": true
+  }
+}

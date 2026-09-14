@@ -18,9 +18,10 @@ Canonical artifact SHA-256:
 `9db18401bdf8399af79cf7be4985673f3e224d6c1551a5c8c04abdea2e05b8fc`.
 
 Artifact hash and discovery lineage were verified, both replay screenshots inspected,
-and structured evidence checked for the configured API key (none found).
-`capabilities/compiled/demo_post_provisional_credit.yaml` is now an exact copy of
-this generated artifact, replacing the previous hand-authored placeholder.
+and structured evidence checked for the configured API key (none found). This
+historical bundle remains unchanged. The canonical artifact was later recompiled
+from this trace with explicit derivation metadata separating trace-derived fields,
+approved policy fields and compiler metadata.
 All data and credits are synthetic local simulator fixtures.
 
 ## Earlier attempts (retained for debugging)
@@ -57,7 +58,16 @@ Fixes validated after live testing:
   action executes until a complete validated decision returns. Quota errors stop.
 - Targeted provider/compiler/browser/replay suite: 26 passed. Lint/types passed.
 
-## Completion verification
+## Current completion verification
+
+[`verification/20260914T024243Z/`](verification/20260914T024243Z/manifest.json)
+replays the current canonical artifact, SHA-256
+`f92adf85ccfdcc212aca16f073600410a9babcd19a36670c90c09dbe64addbf9`.
+All five required outcomes passed with zero model calls. Stored JSON pseudonymizes
+the configured member/account identifiers, screenshots mask those identifiers, and
+the manifest retains the original discovery run ID.
+
+## Earlier completion verification
 
 [`verification/20260913T214456Z/`](verification/20260913T214456Z/manifest.json)
 replays the genuine saved artifact using UI-only pre/postchecks and no model calls.

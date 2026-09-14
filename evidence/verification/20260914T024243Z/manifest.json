@@ -1,0 +1,14 @@
+{
+  "artifact_hash": "f92adf85ccfdcc212aca16f073600410a9babcd19a36670c90c09dbe64addbf9",
+  "source_discovery_run_id": "d55a64c6-8219-4801-a64c-42929635f3e8",
+  "scenarios": [
+    "success",
+    "duplicate",
+    "policy-denied",
+    "intervention",
+    "handoff-resumed"
+  ],
+  "llm_calls": 0,
+  "target_verification": "UI_ONLY",
+  "data": "SYNTHETIC_ONLY"
+}

@@ -10,7 +10,7 @@ typed CapabilityDefinition YAML artifacts equipped with:
 - Cryptographic SHA-256 artifact verification
 """
 
-from decimal import Decimal
+from copy import deepcopy
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -18,19 +18,12 @@ import yaml
 
 from tandem.discovery.recorder import DiscoveryTrace
 from tandem.domain.capability import (
+    ArtifactDerivation,
     CapabilityDefinition,
     ScopedGuardSpec,
     StepAction,
     StepDefinition,
-)
-from tandem.domain.effects import (
-    BoundsSpec,
-    EffectClass,
-    EffectIdentitySpec,
-    EffectSpec,
-    PostcheckSpec,
-    PrecheckSpec,
-    ReconciliationSpec,
+    load_capability_from_yaml,
 )
 
 
@@ -56,6 +49,20 @@ class CapabilityCompiler:
             )
         if trace.provider == "manual" and trace.events:
             raise ValueError("Provider event trace cannot identify its provider as manual")
+        if not trace.money_moved or not trace.discovered_memo:
+            raise ValueError(
+                "Only a successful, receipt-confirmed discovery run can be compiled"
+            )
+
+        policy_profile_path = "capabilities/core/post_provisional_credit.yaml"
+        policy_profile = load_capability_from_yaml(policy_profile_path)
+        if (
+            trace.capability_id != policy_profile.id
+            or trace.system != policy_profile.system
+        ):
+            raise ValueError(
+                "Discovery trace does not match the approved capability policy profile"
+            )
 
         steps: list[StepDefinition] = []
         for action in trace.actions:
@@ -76,101 +83,80 @@ class CapabilityCompiler:
                 )
             )
 
-        # Effect metadata synthesis
-        effect_spec = EffectSpec.model_validate(
-            {
-                "class": EffectClass.COMMIT if trace.money_moved else EffectClass.READ,
-                "idempotency_key": "regE:{{input.case_id}}:provisional_credit",
-                "identity": EffectIdentitySpec(
-                    institution_id="{{input.institution_id}}",
-                    procedure_id="reg_e_dispute",
-                    case_id="{{input.case_id}}",
-                    capability_id=trace.capability_id,
-                    member_id="{{input.member_id}}",
-                    account_id="{{input.account_id}}",
-                    amount="{{input.amount}}",
-                    currency="{{input.currency}}",
-                    business_reference="{{input.case_id}}",
-                ),
-                "precheck": PrecheckSpec(
-                    capability="core.find_memo_by_case",
-                    params={"case_id": "{{input.case_id}}"},
-                    if_found="ALREADY_APPLIED",
-                ),
-                "postcheck": PostcheckSpec(
-                    capability="core.find_memo_by_case",
-                    params={"case_id": "{{input.case_id}}"},
-                    expected_status="CONFIRMED",
-                ),
-                "reconciliation": ReconciliationSpec(
-                    strategy="POSTCHECK_OR_UNCERTAIN",
-                    max_inquiry_attempts=2,
-                ),
-                "compensation": "core.reverse_provisional_credit",
-                "bounds": BoundsSpec(max_amount=Decimal("500.00"), currency="USD"),
-            }
-        )
-
         mutating_actions = [action for action in trace.actions if action.is_mutating]
         guard_container = (
             mutating_actions[-1].container_selector
             if mutating_actions and mutating_actions[-1].container_selector
             else "#credit_action_container, .confirm-panel"
         )
+        approved_guard = policy_profile.scoped_guard
+        assert approved_guard is not None
         scoped_guard = ScopedGuardSpec(
-            guard_id="primary_commit_guard",
+            guard_id=approved_guard.guard_id,
             container_selector=guard_container,
-            expected_institution_template="{{input.institution_id}}",
-            expected_member_template="{{input.member_id}}",
-            expected_account_template="{{input.account_id}}",
-            expected_amount_template="{{input.amount}}",
-            expected_currency_template="{{input.currency}}",
-            expected_case_template="{{input.case_id}}",
+            expected_institution_template=approved_guard.expected_institution_template,
+            expected_member_template=approved_guard.expected_member_template,
+            expected_account_template=approved_guard.expected_account_template,
+            expected_amount_template=approved_guard.expected_amount_template,
+            expected_currency_template=approved_guard.expected_currency_template,
+            expected_case_template=approved_guard.expected_case_template,
         )
 
-        input_schema = {
-            "type": "object",
-            "properties": {
-                "member_id": {"type": "string"},
-                "account_id": {"type": "string"},
-                "case_id": {"type": "string"},
-                "amount": {"type": "number"},
-                "currency": {"type": "string", "const": "USD"},
-                "institution_id": {"type": "string"},
-            },
-            "required": [
-                "institution_id",
-                "member_id",
-                "account_id",
-                "case_id",
-                "amount",
-                "currency",
-            ],
-        }
+        input_schema = deepcopy(policy_profile.input_schema)
+        output_schema = deepcopy(policy_profile.output_schema)
+        output_schema["properties"]["receipt_reference"]["x-selector"] = (
+            "#receipt_memo_code, .result-memo-code"
+        )
+        output_schema["properties"]["money_moved"].update(
+            {"x-selector": "#receipt_money_moved", "x-equals": "MONEY_MOVED=TRUE"}
+        )
+        output_schema["x-business-outcomes"] = [
+            "MEMBER_NOT_FOUND",
+            "ALREADY_APPLIED",
+            "POLICY_DENIED",
+        ]
+        output_schema["x-interventions"] = [
+            "COMPLIANCE_INTERSTITIAL",
+            "POSTCHECK_UNCERTAIN",
+        ]
 
         # Build definition
         capability = CapabilityDefinition(
             id=trace.capability_id,
             version=trace.version,
             created_at=trace.completed_at or trace.started_at,
-            name="Post Provisional Credit",
+            name=policy_profile.name,
             description=trace.goal,
             system=trace.system,
-            effect=effect_spec,
+            effect=policy_profile.effect.model_copy(deep=True),
             input_schema=input_schema,
-            output_schema={
-                "type": "object",
-                "properties": {
-                    "receipt_reference": {"type": "string", "x-selector": "#receipt_memo_code, .result-memo-code"},
-                    "money_moved": {"type": "boolean", "x-selector": "#receipt_money_moved", "x-equals": "MONEY_MOVED=TRUE"},
-                },
-                "required": ["receipt_reference", "money_moved"],
-                "x-business-outcomes": ["MEMBER_NOT_FOUND", "ALREADY_APPLIED", "POLICY_DENIED"],
-                "x-interventions": ["COMPLIANCE_INTERSTITIAL", "POSTCHECK_UNCERTAIN"],
-            },
+            output_schema=output_schema,
             scoped_guard=scoped_guard,
             steps=steps,
             source_discovery_run_id=trace.run_id,
+            derivation=ArtifactDerivation(
+                discovery_derived=[
+                    "id",
+                    "description",
+                    "created_at",
+                    "steps",
+                    "effect.class",
+                    "scoped_guard.container_selector",
+                    "source_discovery_run_id",
+                ],
+                policy_profile=policy_profile_path,
+                policy_derived=[
+                    "effect.identity",
+                    "effect.precheck",
+                    "effect.postcheck",
+                    "effect.reconciliation",
+                    "effect.bounds",
+                    "input_schema",
+                    "output_schema",
+                    "scoped_guard.expected_*",
+                ],
+                compiler_derived=["artifact_hash", "version", "schema_version"],
+            ),
             supported_surfaces=[trace.system],
         )
 

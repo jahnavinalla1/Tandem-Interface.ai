@@ -1,0 +1,36 @@
+{
+  "scenario": "duplicate",
+  "artifact_hash": "f92adf85ccfdcc212aca16f073600410a9babcd19a36670c90c09dbe64addbf9",
+  "inputs": {
+    "institution_id": "alpha",
+    "member_id": "****0142",
+    "account_id": "**********2-01",
+    "case_id": "VERIFY-b549376d5b7b",
+    "amount": "150.00",
+    "currency": "USD"
+  },
+  "llm_calls": 0,
+  "outcome": {
+    "category": "BUSINESS_OUTCOME",
+    "code": "ALREADY_APPLIED",
+    "message": "UI inquiry verified the posted credit identity",
+    "details": {
+      "verification": "UI_ONLY"
+    },
+    "money_moved": false,
+    "audit_ref": "MC-7967",
+    "execution_phase": "BEFORE_SUBMIT",
+    "outputs": {},
+    "failed_step": null,
+    "expected": null,
+    "observed": null,
+    "evidence": "duplicate.png"
+  },
+  "result": {
+    "kind": "business_outcome",
+    "code": "ALREADY_APPLIED",
+    "data": {
+      "verification": "UI_ONLY"
+    }
+  }
+}

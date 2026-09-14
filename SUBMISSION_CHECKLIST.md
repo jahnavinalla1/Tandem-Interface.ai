@@ -7,8 +7,8 @@ claim that every aspirational suggestion in the feedback is implemented.
 | --- | --- |
 | Natural-language goal and target | `scripts.assignment_evidence --goal ... --target ...`; supported task is synthetic provisional credit |
 | Actual LLM-driven browser discovery | `evidence/20260913T161444Z/` has genuine Gemini observations, decisions and screenshots |
-| Versioned reusable artifact | That bundle's `capability.yaml`; typed input/output schemas, guards, source run and hash |
-| Replay without model calls | `make verify-assignment`; latest bundle `evidence/verification/20260913T214456Z/` records zero calls |
+| Versioned reusable artifact | Canonical compiled YAML has typed schemas, guards, source run, hash and field-level derivation; the original generated artifact remains in the discovery bundle |
+| Replay without model calls | `make verify-assignment`; latest bundle `evidence/verification/20260914T024243Z/` records zero calls |
 | Independent effect verification | `tandem/replay/ui_inquiry.py` reads the memo inquiry screen; target API requests blocked in verification |
 | Business outcomes and failures | Duplicate, denied and intervention logs; discriminated result contract in `tandem/domain/result_contract.py` |
 | Policy and sensitive evidence | Shared browser admission, bound-form checks and `tandem/security/evidence.py` |
@@ -31,6 +31,8 @@ semantic alignment and a full remote co-browsing UI are not implemented. The rep
 explains these cuts. The recorded operator is scripted; it is not presented as a
 recording of a person. Public repository publication and submission are not performed.
 
-Final verification: 208 tests passed (three dependency deprecation warnings); lint,
-selected-module type checks and whitespace checks passed. Latest end-to-end demo
-passed all five scenarios. No new Gemini calls were needed for this verification.
+The current artifact passed all five end-to-end verification outcomes with no new
+Gemini calls. Final local verification: 208 application tests and 10 preserved
+adversarial tests passed; lint, type checking, artifact integrity, evidence redaction
+and package build checks passed. Hosted CI repeats those checks and builds the
+container image.

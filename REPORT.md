@@ -25,8 +25,13 @@ larger workflow and real ownership transfer without introducing distributed serv
 The contract has independent schema and capability versions, typed input/output
 schemas, ordered actions, parameter templates, locator fallbacks, scoped identity
 guards, effect bounds, and pre/postcheck metadata. A source discovery run ID links
-it to evidence; canonical SHA-256 detects unintended modification. A digest is not
-a signature: it does not authenticate an adversarial author who can recompute it.
+it to evidence; canonical SHA-256 detects unintended modification. Newly compiled
+artifacts also contain a `derivation` block: navigation and action steps, the commit
+container and run identity come from the successful trace; effect identity,
+precheck/postcheck, bounds and schemas come from the reviewed capability policy;
+the compiler supplies versions and the digest. This makes the artifact's origin
+auditable instead of presenting policy metadata as model-discovered. A digest is
+not a signature: it does not authenticate an adversarial author who can recompute it.
 
 Fills reference declared input names rather than recorded values. Navigation uses
 logical surface routes. Output properties compiled by the current compiler declare
@@ -107,9 +112,10 @@ chosen alternative to requiring approval for every sandbox credit. Compliance
 sign-off belongs to the human path. Admin mutations require a bearer token.
 
 Before provider/evidence boundaries, credential keys and configured secrets are
-redacted, along with common email, SSN and card-number patterns. Screenshots mask
-password/email/card fields, marked sensitive regions and matching text elements.
-This is defense in depth, not a claim that regexes detect all PII. Real institutional
+redacted, along with common email, SSN and card-number patterns. Persisted evidence
+also pseudonymizes the known member and account identifiers. Screenshots mask those
+identifiers, password/email/card fields, marked sensitive regions and matching text
+elements. This is defense in depth, not a claim that regexes detect all PII. Real institutional
 deployments need application-specific region inventories, data classification and
 retention policies. This submission uses only synthetic fixtures; no real customer
 records should be placed in the simulator. `.env` stays outside Git.
@@ -117,8 +123,11 @@ records should be placed in the simulator. `.env` stays outside Git.
 ## Cuts
 
 A genuine Gemini discovery and compiled-artifact replay are retained in
-`evidence/20260913T161444Z/`. Additional UI-only verification and handoff bundles live
-under `evidence/verification/`; their manifests identify exactly which artifact ran.
+`evidence/20260913T161444Z/`. The canonical artifact has since been recompiled from
+that original trace with explicit field provenance. Additional UI-only verification
+and handoff bundles live under `evidence/verification/`; their manifests identify
+exactly which artifact ran. The latest complete bundle is
+`evidence/verification/20260914T024243Z/`.
 Earlier failures are retained and labelled, rather than rewritten as successes.
 
 The deliberate boundary is one concrete web capability with real failure handling,

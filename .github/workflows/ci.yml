@@ -43,6 +43,9 @@ jobs:
       - name: Run preserved independent adversarial audit suite
         run: uv run pytest audit_tests -v
 
+      - name: Build container image
+        run: docker build --tag tandem-ci .
+
       - name: Build distributable wheel and sdist
         run: uv build
 

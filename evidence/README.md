@@ -5,6 +5,11 @@ It contains a genuine Gemini 3.6 Flash discovery, the compiled artifact, success
 new-case replay and an injected-interstitial replay. Both replays used zero model
 calls. See [RUN_STATUS.md](RUN_STATUS.md) for verified results and earlier attempts.
 
+The latest keyless verification of the current canonical artifact is
+[verification/20260914T024243Z](verification/20260914T024243Z/manifest.json). It
+records five passing outcomes, zero model calls, real lease transfer, and masked
+member/account evidence.
+
 To produce another bundle, configure the discovery provider credentials in the
 ignored `.env` file and run from the repository root:
 
@@ -27,5 +32,5 @@ A manifest is written only after the expected outcomes pass. Failed runs retain
 partial evidence; do not describe them as successful submissions.
 
 Review generated files before making them public. The recorder masks configured
-secrets and common sensitive-data patterns, but the simulator should still contain
-only synthetic records.
+secrets, common sensitive-data patterns, and the known synthetic member/account
+identifiers, but the simulator should still contain only synthetic records.

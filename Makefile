@@ -1,6 +1,6 @@
 .PHONY: setup seed dev test lint format clean \
 	demo-discovery demo-replay demo-duplicate demo-wrong-entity \
-	demo-crash demo-handoff demo-second-institution demo-uncertain
+	demo-uncertain
 
 setup:
 	uv venv --python 3.12
@@ -38,16 +38,7 @@ demo-duplicate:
 	uv run python scripts/demo.py --scenario replay-same-case
 
 demo-wrong-entity:
-	uv run python scripts/demo.py --scenario transposed-id
-
-demo-crash:
-	uv run python scripts/demo.py --scenario crash-resume
-
-demo-handoff:
-	uv run python scripts/demo.py --scenario human-handoff
-
-demo-second-institution:
-	uv run python scripts/demo.py --scenario second-institution
+	uv run python scripts/demo.py --scenario wrong-member-or-amount
 
 demo-uncertain:
 	uv run python scripts/demo.py --scenario uncertain-effect

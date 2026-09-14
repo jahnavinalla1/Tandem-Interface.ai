@@ -10,7 +10,7 @@ from playwright.sync_api import Page
 from tandem.handoff.coordinator import HandoffCoordinator
 from tandem.ledger.database import get_engine, get_session_factory, init_db
 from tandem.ledger.repository import LedgerRepository
-from tandem.security.evidence import sanitize, screenshot
+from tandem.security.evidence import sanitize_evidence, screenshot
 
 
 class ConsoleHandoff:
@@ -22,11 +22,20 @@ class ConsoleHandoff:
 
     def __call__(self, page: Page, request: dict) -> bool:
         case_id = 'DISCOVERY-HANDOFF-' + uuid4().hex[:12]
+        identifiers = [
+            str(request[key])
+            for key in ('member_id', 'account_id')
+            if request.get(key)
+        ]
         engine = get_engine(str(self.root / 'operator.db'))
         init_db(engine)
         request_path = self.root / (case_id + '.json')
-        request_path.write_text(json.dumps(sanitize(request), indent=2))
-        (self.root / (case_id + '.png')).write_bytes(screenshot(page))
+        request_path.write_text(
+            json.dumps(sanitize_evidence(request, identifiers=identifiers), indent=2)
+        )
+        (self.root / (case_id + '.png')).write_bytes(
+            screenshot(page, identifiers=identifiers)
+        )
         with get_session_factory(engine)() as db:
             repo = LedgerRepository(db)
             repo.create_or_get_case(case_id, 'SYNTHETIC', Decimal('0.00'))
@@ -47,5 +56,7 @@ class ConsoleHandoff:
             db.commit()
             request.update(operator_notes=notes, resumed=answer == 'resume',
                            fencing_tokens=[old, human.fencing_token, resumed.fencing_token])
-            request_path.write_text(json.dumps(sanitize(request), indent=2))
+            request_path.write_text(
+                json.dumps(sanitize_evidence(request, identifiers=identifiers), indent=2)
+            )
             return answer == 'resume'

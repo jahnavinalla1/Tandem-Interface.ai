@@ -76,6 +76,8 @@ class DiscoveryAgent:
         if self.page is not None:
             install_navigation_policy(self.page.context)
         typed_inputs = self._typed_inputs(inputs)
+        self._member_id_for_evidence = typed_inputs['member_id']
+        self._account_id_for_evidence = typed_inputs['account_id']
         policy_cap = load_capability_from_yaml("capabilities/core/post_provisional_credit.yaml")
         validate_policy(policy_cap, typed_inputs)
         url = target
@@ -87,6 +89,7 @@ class DiscoveryAgent:
             provider=self.provider.provider_name,
             model=self.provider.model,
             evidence_root=self.evidence_root,
+            evidence_identifiers=[typed_inputs['member_id'], typed_inputs['account_id']],
         )
 
         finished = False
@@ -355,7 +358,13 @@ class DiscoveryAgent:
 
     def _safe_screenshot(self) -> bytes | None:
         try:
-            return screenshot(self.page)
+            return screenshot(
+                self.page,
+                identifiers=[
+                    getattr(self, '_member_id_for_evidence', ''),
+                    getattr(self, '_account_id_for_evidence', ''),
+                ],
+            )
         except Exception:
             return None
 

@@ -13,15 +13,12 @@ from tandem.domain.effects import EffectClass, EffectSpec
 
 
 class StepAction(str, Enum):
-    """Supported deterministic browser interaction primitives."""
+    """Action primitives implemented by the browser or HTTP executor."""
 
     NAVIGATE = "NAVIGATE"
     CLICK = "CLICK"
     FILL = "FILL"
-    SELECT_FRAME = "SELECT_FRAME"
-    WAIT_FOR = "WAIT_FOR"
     ASSERT_CONTAINER = "ASSERT_CONTAINER"
-    READ_TEXT = "READ_TEXT"
     SUBMIT = "SUBMIT"
     HTTP_POST = "HTTP_POST"
 
@@ -92,6 +89,17 @@ class ScopedGuardSpec(BaseModel):
     )
 
 
+class ArtifactDerivation(BaseModel):
+    """Auditable origin of fields in a compiled capability artifact."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    discovery_derived: List[str] = Field(default_factory=list)
+    policy_profile: str
+    policy_derived: List[str] = Field(default_factory=list)
+    compiler_derived: List[str] = Field(default_factory=list)
+
+
 class CapabilityDefinition(BaseModel):
     """Versioned, typed capability artifact compiled from discovery or manually specified."""
 
@@ -120,6 +128,10 @@ class CapabilityDefinition(BaseModel):
     )
     source_discovery_run_id: Optional[str] = Field(
         default=None, description="ID of discovery run that generated this artifact"
+    )
+    derivation: Optional[ArtifactDerivation] = Field(
+        default=None,
+        description="Field-level origin record for artifacts compiled from discovery",
     )
     supported_surfaces: List[str] = Field(
         default_factory=list,
@@ -164,6 +176,11 @@ class CapabilityDefinition(BaseModel):
         """Compute SHA-256 over every normalized field except the digest itself."""
 
         data = self.model_dump(by_alias=True, mode="json", exclude={"artifact_hash"})
+        # Schema v1 artifacts created before field-level derivation was introduced
+        # did not include the optional key. Preserve their canonical bytes while
+        # hashing the provenance of newly compiled artifacts when it is present.
+        if data.get("derivation") is None:
+            data.pop("derivation", None)
         return compute_artifact_digest(data)
 
 

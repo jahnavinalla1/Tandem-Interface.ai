@@ -7,6 +7,7 @@ lease transfer protocol. Use --manual-handoff to perform sign-off yourself inste
 import argparse
 import json
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
 
@@ -20,7 +21,7 @@ from tandem.ledger.database import get_engine, get_session_factory, init_db
 from tandem.ledger.repository import LedgerRepository
 from tandem.policy.telemetry import llm_tracker
 from tandem.replay.executor import DeterministicExecutor
-from tandem.security.evidence import sanitize, screenshot
+from tandem.security.evidence import sanitize_evidence, screenshot
 from tandem.support.simulator_control import ensure_simulators_running, set_core_bank_mode
 
 
@@ -42,7 +43,7 @@ def main():
         # Enforce no target API calls at browser transport, including fetch/XHR.
         page.context.route('**/api/**', lambda route: route.abort())
         inputs = dict(institution_id='alpha', member_id='8830142', account_id='CHK-8830142-01',
-                      case_id='VERIFY-' + uuid4().hex[:12], amount=150.0, currency='USD')
+                      case_id='VERIFY-' + uuid4().hex[:12], amount=Decimal('150.00'), currency='USD')
         executor = DeterministicExecutor(page, ui_checks=True)
 
         def save(name, outcome):
@@ -51,8 +52,17 @@ def main():
             record = dict(scenario=name, artifact_hash=cap.artifact_hash,
                           inputs=inputs.copy(), llm_calls=0, outcome=outcome.model_dump(mode='json'),
                           result=to_result(outcome).model_dump(mode='json'))
-            (folder / (name + '.json')).write_text(json.dumps(sanitize(record), indent=2))
-            (folder / (name + '.png')).write_bytes(screenshot(page))
+            identifiers = [str(inputs['member_id']), str(inputs['account_id'])]
+            (folder / (name + '.json')).write_text(
+                json.dumps(
+                    sanitize_evidence(record, identifiers=identifiers),
+                    indent=2,
+                    default=str,
+                )
+            )
+            (folder / (name + '.png')).write_bytes(
+                screenshot(page, identifiers=identifiers)
+            )
             records.append(record)
             print(name + ': ' + outcome.code.value, flush=True)
 
@@ -63,11 +73,11 @@ def main():
             result = executor.execute(cap, inputs)
             save('duplicate', result)
             assert result.code == OutcomeCode.ALREADY_APPLIED
-            inputs['amount'] = 501
+            inputs['amount'] = Decimal('501.00')
             result = executor.execute(cap, inputs)
             save('policy-denied', result)
             assert result.code == OutcomeCode.POLICY_DENIED
-            inputs['amount'] = 150
+            inputs['amount'] = Decimal('150.00')
             inputs['case_id'] = 'HANDOFF-' + uuid4().hex[:12]
             set_core_bank_mode(require_compliance_interstitial=True)
             result = executor.execute(cap, inputs)

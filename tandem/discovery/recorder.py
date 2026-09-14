@@ -11,7 +11,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from tandem.discovery.provider import BrowserObservation, DiscoveryDecision
-from tandem.security.evidence import redact_text
+from tandem.security.evidence import redact_text, sanitize_evidence
 
 
 def _now() -> str:
@@ -103,6 +103,7 @@ class TraceRecorder:
         model: str = "manual",
         evidence_root: str | Path | None = None,
         run_id: str | None = None,
+        evidence_identifiers: list[str] | None = None,
     ) -> None:
         self.capability_id = capability_id
         self.goal = goal
@@ -110,6 +111,7 @@ class TraceRecorder:
         self.provider = provider
         self.model = model
         self.run_id = run_id or str(uuid4())
+        self.evidence_identifiers = list(evidence_identifiers or [])
         self.started_at = _now()
         self.actions: list[ActionTrace] = []
         self.events: list[DiscoveryEvent] = []
@@ -204,7 +206,10 @@ class TraceRecorder:
             observation_ref = f"observations/cycle_{cycle:03d}.json"
             (self.evidence_directory / observation_ref).write_text(
                 json.dumps(
-                    redact_secrets(observation.model_dump(mode="json")),
+                    sanitize_evidence(
+                        observation.model_dump(mode="json"),
+                        identifiers=self.evidence_identifiers,
+                    ),
                     sort_keys=True,
                     indent=2,
                 ),
@@ -270,7 +275,9 @@ class TraceRecorder:
     def _write_trace(self, trace: DiscoveryTrace) -> None:
         if self.evidence_directory is None:
             return
-        payload = redact_secrets(trace.model_dump(mode="json"))
+        payload = sanitize_evidence(
+            trace.model_dump(mode="json"), identifiers=self.evidence_identifiers
+        )
         (self.evidence_directory / "trace.json").write_text(
             json.dumps(payload, sort_keys=True, indent=2), encoding="utf-8"
         )

@@ -2,12 +2,12 @@
 
 import pytest
 from playwright.sync_api import sync_playwright
+from pydantic import ValidationError
 
-from tandem.domain.capability import StepAction, StepDefinition, load_capability_from_yaml
+from tandem.domain.capability import StepDefinition
 from tandem.domain.errors import PolicyViolationError
 from tandem.domain.outcomes import ExecutionOutcome, OutcomeCategory, OutcomeCode
 from tandem.policy.browser import authorize_control, authorize_url
-from tandem.replay.executor import DeterministicExecutor
 from tandem.surfaces.playwright_surface import PlaywrightSurface
 
 
@@ -23,16 +23,10 @@ def test_policy_blocks_external_origin_and_admin_routes():
     authorize_url('http://127.0.0.1:8001')
 
 
-def test_unsupported_steps_rejected_before_browser_action():
-    cap = load_capability_from_yaml('capabilities/core/post_provisional_credit.yaml')
-    cap.steps.insert(0, StepDefinition(step_id='read', action=StepAction.READ_TEXT, semantic_target='read'))
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        result = DeterministicExecutor(page).execute(cap, {})
-        assert result.code == OutcomeCode.POLICY_VIOLATION
-        assert page.url == 'about:blank'
-        browser.close()
+def test_unimplemented_actions_are_not_exposed_by_artifact_schema():
+    for action in ('READ_TEXT', 'WAIT_FOR', 'SELECT_FRAME'):
+        with pytest.raises(ValidationError):
+            StepDefinition(step_id='unsupported', action=action, semantic_target='unsupported')
 
 
 def test_ambiguous_locator_and_misclassified_commit_blocked():
@@ -49,11 +43,25 @@ def test_ambiguous_locator_and_misclassified_commit_blocked():
 
 
 def test_common_pii_is_redacted_at_boundary():
-    from tandem.security.evidence import sanitize
+    from tandem.security.evidence import sanitize, sanitize_evidence
+
     result = sanitize({'body': 'Contact alice@example.com; SSN 123-45-6789', 'password': 'private'})
     assert result['password'] == '[REDACTED]'
     assert 'alice@example.com' not in result['body']
     assert '123-45-6789' not in result['body']
+
+    evidence = sanitize_evidence(
+        {
+            'member_id': '8830142',
+            'account_id': 'CHK-8830142-01',
+            'body': 'Member 8830142 uses CHK-8830142-01',
+        },
+        identifiers=['8830142', 'CHK-8830142-01'],
+    )
+    assert evidence['member_id'].endswith('0142')
+    assert evidence['account_id'].endswith('2-01')
+    assert '8830142' not in evidence['body']
+    assert 'CHK-8830142-01' not in evidence['body']
 
 
 def test_caller_result_is_discriminated():
